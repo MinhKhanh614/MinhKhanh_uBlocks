@@ -1,0 +1,51 @@
+module MKE_M01_LED_MODULE
+author MinhKhanh614
+version 1 0 
+description ''
+
+  choices pinList 'D9' 'D10' 'D11' 'D12' 'D13'
+
+  spec ' ' 'Set LED on pin' 'Set LED on pin _ to state _' 'str.pinList bool' 'D9' true
+  spec ' ' 'myBlock' 'Set LED on pin _ to state _' 'str.pinList num' 'D9' 1
+
+to 'Set LED on pin' _pin _state {
+  local 'var_pin' -1
+  if (_pin == 'D9') {
+    var_pin = 13
+  } (_pin == 'D10') {
+    var_pin = 5
+  } (_pin == 'D11') { 
+    var_pin = 23
+  } (_pin == 'D12') {
+    var_pin = 19
+  } (_pin == 'D13') {
+    var_pin = 18
+  }
+  if _state {
+    digitalWriteOp var_pin true
+  } else {
+    digitalWriteOp var_pin false
+  }
+}
+
+to myBlock _pin _stateInput {
+  local 'var_pin' -1
+  if (_pin == 'D9') {
+    var_pin = 13
+  } (_pin == 'D10') {
+    var_pin = 5
+  } (_pin == 'D11') {
+    var_pin = 23
+  } (_pin == 'D12') {
+    var_pin = 19
+  } (_pin == 'D13') {
+    var_pin = 18
+  }
+  _stateInput = (ifExpression (_stateInput > 0) 1 0)
+  if (_stateInput == 1) {
+    digitalWriteOp var_pin true
+  } else {
+    digitalWriteOp var_pin false
+  }
+}
+
