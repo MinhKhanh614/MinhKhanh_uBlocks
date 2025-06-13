@@ -3,10 +3,10 @@ author MinhKhanh614
 version 1 0 
 description ''
 
-  choices pinList 'D9' 'D10' 'D11' 'D12' 'D13'
+  choices pinListLED 'D9' 'D10' 'D11' 'D12' 'D13'
 
-  spec ' ' 'Set LED on pin' 'Set LED on pin _ to state _' 'str.pinList bool' 'D9' true
-  spec ' ' 'myBlock' 'Set LED on pin _ to state _' 'str.pinList num' 'D9' 1
+  spec ' ' 'Set LED on pin' 'Set LED on pin _ to state _' 'str.pinListLED bool' 'D9' true
+  spec ' ' 'myBlock' 'Set LED on pin _ to state _' 'str.pinListLED num' 'D9' 1
 
 to 'Set LED on pin' _pin _state {
   local 'var_pin' -1
