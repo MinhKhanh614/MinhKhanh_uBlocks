@@ -1,0 +1,143 @@
+module 'oneButton_rebuild_v1.1'
+author unknown
+version 1 0 
+description ''
+variables _buttonPinList _debounceDelayList _longPressTimeList _buttonStateList _pressedList _lastDebounceTimeList _pressStartTimeList _lastClickTimeList _clickCountList
+
+  spec ' ' 'Set Button port' 'Set Button port _ longPressTime (ms) _' 'str num' 'D9' 1000
+  spec ' ' 'Set button port' 'Set Button port _ debounceDelayTime (ms) _' 'str num' 'D9' 50
+  spec 'r' '_checkPortToPin' '_checkPortToPin _' 'auto' 'D9'
+  spec ' ' '_updateButtonLoop' '_updateButtonLoop'
+  spec 'r' 'is Button port' 'is Button port _ _ ?' 'str str' 'D9' 'Clicked'
+
+to 'Set Button port' _pinLabel _longPressTime {
+  local 'tempPin' ('_checkPortToPin' _pinLabel)
+  local 'pinLocation' ('[data:find]' tempPin _buttonPinList)
+  if (pinLocation < 0) {
+    return 0
+  } else {
+    if (_longPressTimeList != 0) {atPut pinLocation _longPressTimeList _longPressTime}
+  }
+}
+
+to 'Set button port' _pinLabel _debounceDelay {
+  local 'tempPin' ('_checkPortToPin' _pinLabel)
+  local 'pinLocation' ('[data:find]' tempPin _buttonPinList)
+  if (pinLocation < 0) {
+    return 0
+  } else {
+    if (_debounceDelayList != 0) {atPut pinLocation _debounceDelayList _debounceDelay}
+  }
+}
+
+to '_checkPortToPin' _pinLabel {
+  if (_pinLabel == ('[data:toString]' 'D9')) {
+    return 13
+  } (_pinLabel == ('[data:toString]' 'D11')) {
+    return 23
+  } (_pinLabel == ('[data:toString]' 'D12')) {
+    return 19
+  } (_pinLabel == ('[data:toString]' 'D13')) {
+    return 18
+  } else {
+    return -1
+  }
+}
+
+to '_updateButtonLoop' {
+  if (_buttonPinList != 0) {forever {
+    for i (size _buttonPinList) {
+      local 'pin' (at i _buttonPinList)
+      local '_debounceDelay' (at i _debounceDelayList)
+      local '_longPressTime' (at i _longPressTimeList)
+      local 'reading' (digitalReadOp pin)
+      local 'buttonState' (at i _buttonStateList)
+      local 'pressed' (at i _pressedList)
+      local 'lastDebounceTime' (at i _lastDebounceTimeList)
+      local 'pressStartTime' (at i _pressStartTimeList)
+      local 'lastClickTime' (at i _lastClickTimeList)
+      local 'clickCount' (at i _clickCountList)
+      // Debounce
+      if (reading != buttonState) {
+        lastDebounceTime = (millisOp)
+        atPut i _lastDebounceTimeList lastDebounceTime
+      }
+      if (((millisOp) - lastDebounceTime) > _debounceDelay) {
+        if (reading != pressed) {
+          pressed = reading
+          atPut i _pressedList pressed
+          if (pressed == (booleanConstant false)) {
+            pressStartTime = (millisOp)
+            atPut i _pressStartTimeList pressStartTime
+          } else {
+            local 'pressDuration' ((millisOp) - pressStartTime)
+            if (pressDuration > _longPressTime) {
+              atPut i _buttonStateList ('[data:toString]' 'Long-Clicked')
+              clickCount = 0
+              atPut i _clickCountList clickCount
+            } else {
+              // Double click detection
+              if (((millisOp) - lastClickTime) < 400) {
+                clickCount = (clickCount + 1)
+              } else {
+                clickCount = 1
+              }
+              lastClickTime = (millisOp)
+              atPut i _lastClickTimeList lastClickTime
+              atPut i _clickCountList clickCount
+              if (clickCount == 2) {
+                atPut i _buttonStateList ('[data:toString]' 'Double-Clicked')
+                clickCount = 0
+                atPut i _clickCountList clickCount
+              } else {
+                atPut i _buttonStateList ('[data:toString]' 'Clicked')
+              }
+            }
+          }
+        }
+      }
+      atPut i _buttonStateList ('[data:toString]' 'non')
+      atPut i _buttonStateList reading
+    }
+    waitMillis 15
+  }
+  }
+}
+
+to 'is Button port' _pinLabel _stateLabel {
+  if (_buttonPinList == 0) {
+    _buttonPinList = ('[data:makeList]')
+    _debounceDelayList = ('[data:makeList]')
+    _longPressTimeList = ('[data:makeList]')
+    _buttonStateList = ('[data:makeList]')
+    _pressedList = ('[data:makeList]')
+    _lastDebounceTimeList = ('[data:makeList]')
+    _pressStartTimeList = ('[data:makeList]')
+    _lastClickTimeList = ('[data:makeList]')
+    _clickCountList = ('[data:makeList]')
+    sendBroadcast '_updateButtonLoop'
+  }
+  local 'tempPin' ('_checkPortToPin' _pinLabel)
+  local 'pinLocation' ('[data:find]' tempPin _buttonPinList)
+  if (pinLocation < 0) {
+    if (tempPin != -1) {
+      '[data:addLast]' tempPin _buttonPinList
+      '[data:addLast]' 50 _debounceDelayList
+      '[data:addLast]' 1000 _longPressTimeList
+      '[data:addLast]' ('[data:toString]' 'non') _buttonStateList
+      '[data:addLast]' (booleanConstant true) _pressedList
+      '[data:addLast]' 0 _lastDebounceTimeList
+      '[data:addLast]' 0 _pressStartTimeList
+      '[data:addLast]' 0 _lastClickTimeList
+      '[data:addLast]' 0 _clickCountList
+      pinLocation = (size _buttonPinList)
+    }
+  }
+  local '_getButtonState' (at pinLocation _buttonStateList)
+  if (_getButtonState == _stateLabel) {
+    return (booleanConstant true)
+  } else {
+    return (booleanConstant false)
+  }
+}
+

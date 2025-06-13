@@ -1,0 +1,379 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables kStt 
+
+  spec ' ' '_longPressCallback' 'longPressCallback'
+  spec ' ' 'clickCallback' 'clickCallback'
+  spec ' ' 'doubleClickCallback' 'doubleClickCallback'
+
+to '_longPressCallback' {
+  sendBroadcast '1'
+  kStt = 1
+}
+
+to clickCallback {
+  sendBroadcast '3'
+  kStt = 3
+}
+
+to doubleClickCallback {
+  sendBroadcast '2'
+  kStt = 2
+}
+
+script 54 54 {
+whenBroadcastReceived '3'
+forever {
+  if (kStt != 3) {stopTask}
+  'Set LED on pin' 'D11' true
+  waitMillis 100
+  'Set LED on pin' 'D11' false
+  waitMillis 100
+}
+}
+
+script 371 54 {
+whenStarted
+'khởi tạo nút nhấn ở chân' 'D9'
+forever {
+  'kiểm tra trạng thái nút'
+}
+}
+
+script 54 366 {
+to '_longPressCallback' {}
+}
+
+script 295 366 {
+whenBroadcastReceived '2'
+forever {
+  if (kStt != 2) {stopTask}
+  'Set LED on pin' 'D10' true
+  waitMillis 1000
+  'Set LED on pin' 'D10' false
+  waitMillis 1000
+}
+}
+
+script 54 678 {
+whenBroadcastReceived '1'
+forever {
+  if (kStt != 1) {stopTask}
+  'Set LED on pin' 'D11' true
+  waitMillis 2000
+  'Set LED on pin' 'D11' false
+  waitMillis 2000
+}
+}
+
+script 379 678 {
+to doubleClickCallback {}
+}
+
+script 632 678 {
+to clickCallback {}
+}
+
+
+module 'Button Events' Input
+author MicroBlocks
+version 1 0 
+tags event button double long press 
+description 'Provides blocks to detect press, long press and double press events on buttons.'
+variables _buttons 
+
+  spec 'r' 'button double pressed' 'button _ double pressed' 'auto' 'A'
+  spec 'r' 'button long pressed' 'button _ long pressed' 'auto' 5
+  spec 'r' 'button pressed' 'button _ pressed' 'auto' 5
+  spec 'r' '_button' '_button _' 'auto' 10
+  spec ' ' '_updateButtons' '_updateButtons'
+  spec 'r' '_read button' '_read button _' 'auto' 10
+
+to '_button' 'pin or name' {
+  '_updateButtons'
+  for 'each button' _buttons {
+    if ((at 1 (v 'each button')) == (v 'pin or name')) {return (v 'each button')}
+  }
+  comment 'This button has not been initialized. Let''s add it.'
+  local 'new button' ('[data:makeList]' (v 'pin or name') '' '' 'waiting')
+  '[data:addLast]' (v 'new button') _buttons
+  return (v 'new button')
+}
+
+to '_read button' 'pin or name' {
+  if ((v 'pin or name') == 'A') {
+    return (buttonA)
+  } ((v 'pin or name') == 'B') {
+    return (buttonB)
+  } else {
+    return (digitalReadOp (v 'pin or name'))
+  }
+}
+
+to '_updateButtons' {
+  if (_buttons == 0) {_buttons = ('[data:makeList]')}
+  for button _buttons {
+    local 'currently pressed' ('_read button' (at 1 button))
+    local 'previous state' (at 4 button)
+    if (and ((v 'previous state') == 'waiting') (v 'currently pressed')) {
+      comment 'save state change time'
+      atPut 2 button (millisOp)
+      atPut 3 button (v 'currently pressed')
+      atPut 4 button 'pressed'
+    } (and ((v 'previous state') == 'pressed') (not (v 'currently pressed'))) {
+      local 'press time' ((millisOp) - (at 2 button))
+      comment 'There''s been a press. Let''s check how long it was.'
+      if ((v 'press time') > 500) {
+        atPut 4 button 'long press'
+      } ((v 'press time') > 250) {
+        atPut 4 button 'single press'
+      } else {
+        comment 'This is an internal intermediate state.
+It could turn out to be a single press or a double press.'
+        atPut 2 button (millisOp)
+        atPut 4 button 'short press'
+      }
+    } (and ((v 'previous state') == 'short press') (v 'currently pressed')) {
+      atPut 4 button 'double press'
+    } (and (and ((v 'previous state') == 'short press') (not (v 'currently pressed'))) (((millisOp) - (at 2 button)) > 250)) {
+      atPut 4 button 'single press'
+    } (and ((v 'previous state') == 'double press handled') (not (v 'currently pressed'))) {
+      comment 'We only go back to "waiting" after a double press if the event has been handled
+and the user has released the button. Otherwise we''ll cause false "single press"
+positives.'
+      atPut 4 button 'waiting'
+    }
+  }
+}
+
+to 'button double pressed' 'pin or name' {
+  local 'button' ('_button' (v 'pin or name'))
+  local 'state' (at 4 button)
+  if (state == 'double press') {
+    comment 'We only go back to "waiting" after a double press if the event has been handled
+and the user has released the button. Otherwise we''ll cause false "single press"
+positives.'
+    atPut 4 button 'double press handled'
+    return (booleanConstant true)
+  }
+  return (booleanConstant false)
+}
+
+to 'button long pressed' 'pin or name' {
+  local 'button' ('_button' (v 'pin or name'))
+  local 'state' (at 4 button)
+  if (state == 'long press') {
+    atPut 4 button 'waiting'
+    return (booleanConstant true)
+  }
+  return (booleanConstant false)
+}
+
+to 'button pressed' 'pin or name' {
+  local 'button' ('_button' (v 'pin or name'))
+  local 'state' (at 4 button)
+  if (state == 'single press') {
+    atPut 4 button 'waiting'
+    return (booleanConstant true)
+  }
+  return (booleanConstant false)
+}
+
+
+module MKE_M01_LED_MODULE
+author MinhKhanh614
+version 1 0 
+choices pinList D9 D10 D11 D12 D13 
+description ''
+
+  spec ' ' 'Set LED on pin' 'Set LED on pin _ to state _' 'str.pinList bool' 'D9' true
+  spec ' ' 'myBlock' 'Set LED on pin _ to state _' 'str.pinList num' 'D9' 1
+
+to 'Set LED on pin' _pin _state {
+  local 'var_pin' -1
+  if (_pin == 'D9') {
+    var_pin = 13
+  } (_pin == 'D10') {
+    var_pin = 5
+  } (_pin == 'D11') {
+    var_pin = 23
+  } (_pin == 'D12') {
+    var_pin = 19
+  } (_pin == 'D13') {
+    var_pin = 18
+  }
+  if _state {
+    digitalWriteOp var_pin true
+  } else {
+    digitalWriteOp var_pin false
+  }
+}
+
+to myBlock _pin _stateInput {
+  local 'var_pin' -1
+  if (_pin == 'D9') {
+    var_pin = 13
+  } (_pin == 'D10') {
+    var_pin = 5
+  } (_pin == 'D11') {
+    var_pin = 23
+  } (_pin == 'D12') {
+    var_pin = 19
+  } (_pin == 'D13') {
+    var_pin = 18
+  }
+  _stateInput = (ifExpression (_stateInput > 0) 1 0)
+  if (_stateInput == 1) {
+    digitalWriteOp var_pin true
+  } else {
+    digitalWriteOp var_pin false
+  }
+}
+
+
+module OneButton
+author minhkhanh210
+version 1 1 
+choices _buttonPinList D9 D10 D11 D12 D13 
+choices buttonEventList clicked 'double clicked' 'long clicked' 
+description 'Thư viện nút nhấn đa sự kiện cho MicroBlocks.'
+variables _buttonState _lastDebounceTime _debounceDelay _buttonPin _buttonPressed _clickCallback _longPressCallback _doubleClickCallback _longPressTime _pressStartTime _lastClickTime _clickCount 
+
+  spec ' ' 'khởi tạo nút nhấn' 'khởi tạo nút nhấn ở chân _' 'str._buttonPinList' 'D9'
+  spec ' ' 'đặt debounce' 'đặt thời gian debounce là _ ms' 'num' 50
+  spec ' ' 'đặt long press' 'đặt thời gian nhấn giữ là _ ms' 'num' 1000
+  spec ' ' 'khi nhấn nút' 'khi nhấn nút thì _' 'any'
+  spec ' ' 'khi nhấn giữ nút' 'khi nhấn giữ nút thì _' 'any'
+  spec ' ' 'khi nhấn đúp nút' 'khi nhấn đúp nút thì _' 'any'
+  spec ' ' 'kiểm tra nút' 'kiểm tra trạng thái nút'
+  spec 'r' 'trạng thái nút' 'trạng thái nút'
+  spec 'r' 'is button event' 'is button pin _ _' 'str._buttonPinList str.buttonEventList' 'D9' 'clicked'
+  spec ' ' 'khởi tạo nút nhấn ở chân' 'khởi tạo nút nhấn ở chân _pinLabel _' 'str' '1'
+
+to 'is button pin _ _' _pinLabel _event {
+  local 'pinNum' -1
+  if (_pinLabel == 'D9') {
+    pinNum = 13
+  } true {
+    v if
+  } (_pinLabel == 'D10') {
+    pinNum = 5
+  } true {
+    v if
+  } (_pinLabel == 'D11') {
+    pinNum = 23
+  } true {
+    v if
+  } (_pinLabel == 'D12') {
+    pinNum = 19
+  } true {
+    v if
+  } (_pinLabel == 'D13') {
+    pinNum = 18
+  }
+  if (pinNum != _buttonPin) {
+    return 0
+  }
+  if (_event == 'clicked') {
+    return (_buttonPressed == 0)
+  } true {
+    v if
+  } (_event == 'long clicked') {
+    return ('_buttonPressed' '==' 0 && (millisSince 0 '-' _pressStartTime) '>' _longPressTime)
+  } true {
+    v if
+  } (_event == 'double clicked') {
+    return (_clickCount == 2)
+  } else {
+    return 0
+  }
+}
+
+to 'khi nhấn giữ nút thì' _handler {
+  _longPressCallback = _handler
+}
+
+to 'khi nhấn nút thì' _handler {
+  _clickCallback = _handler
+}
+
+to 'khi nhấn đúp nút thì' _handler {
+  _doubleClickCallback = _handler
+}
+
+to 'khởi tạo nút nhấn ở chân' _pinLabel {
+  if (_pinLabel == ('[data:toString]' 'D9')) {
+    _buttonPin = 13
+    sayIt '_buttonPin:' _buttonPin
+  } (_pinLabel == ('[data:toString]' 'D11')) {
+    _buttonPin = 23
+    sayIt '_buttonPin:' _buttonPin
+  } (_pinLabel == ('[data:toString]' 'D12')) {
+    _buttonPin = 19
+    sayIt '_buttonPin:' _buttonPin
+  } (_pinLabel == ('[data:toString]' 'D13')) {
+    _buttonPin = 18
+    sayIt '_buttonPin:' _buttonPin
+  }
+  _buttonState = (digitalReadOp _buttonPin)
+  _buttonPressed = _buttonState
+  _lastDebounceTime = (millisOp)
+  _pressStartTime = 0
+  _lastClickTime = 0
+  _clickCount = 0
+}
+
+to 'kiểm tra trạng thái nút' {
+  _clickCallback = 1
+  _longPressCallback = 1
+  _doubleClickCallback = 1
+  _debounceDelay = 50
+  _longPressTime = 1000
+  local 'reading' (digitalReadOp _buttonPin)
+  if (reading != _buttonState) {
+    _lastDebounceTime = (millisOp)
+  }
+  if (((millisOp) - _lastDebounceTime) > _debounceDelay) {
+    if (reading != _buttonPressed) {
+      _buttonPressed = reading
+      if (_buttonPressed == (booleanConstant false)) {
+        _pressStartTime = (millisOp)
+      } else {
+        local 'pressDuration' ((millisOp) - _pressStartTime)
+        if (pressDuration > _longPressTime) {
+          if (_longPressCallback != 0) {'_longPressCallback'}
+          _clickCount = 0
+        } else {
+          if (((millisOp) - _lastClickTime) < 400) {
+            _clickCount = (_clickCount + 1)
+          } else {
+            _clickCount = 1
+          }
+          _lastClickTime = (millisOp)
+          if (_clickCount == 2) {
+            if (_doubleClickCallback != 0) {doubleClickCallback}
+            _clickCount = 0
+          } else {
+            if (_clickCallback != 0) {clickCallback}
+          }
+        }
+      }
+    }
+  }
+  _buttonState = reading
+}
+
+to 'trạng thái nút' {
+  return _buttonPressed
+}
+
+to 'đặt thời gian debounce là' _ms {
+  _debounceDelay = _ms
+}
+
+to 'đặt thời gian nhấn giữ là' _ms {
+  _longPressTime = _ms
+}
+

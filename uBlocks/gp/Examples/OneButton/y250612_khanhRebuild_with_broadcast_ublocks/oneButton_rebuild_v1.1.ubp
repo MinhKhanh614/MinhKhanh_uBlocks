@@ -1,0 +1,274 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables kStt 
+
+  spec ' ' '_longPressCallback' 'longPressCallback'
+  spec ' ' 'clickCallback' 'clickCallback'
+  spec ' ' 'doubleClickCallback' 'doubleClickCallback'
+
+to '_longPressCallback' {
+  sendBroadcast '1'
+  kStt = 1
+}
+
+to clickCallback {
+  sendBroadcast '3'
+  kStt = 3
+}
+
+to doubleClickCallback {
+  sendBroadcast '2'
+  kStt = 2
+}
+
+script 50 50 {
+whenBroadcastReceived '3'
+forever {
+  if (kStt != 3) {stopTask}
+  'Set LED on pin' 'D11' true
+  waitMillis 100
+  'Set LED on pin' 'D11' false
+  waitMillis 100
+}
+}
+
+script 367 50 {
+whenStarted
+'khởi tạo nút nhấn ở chân' 'D9'
+forever {
+  'kiểm tra trạng thái nút'
+}
+}
+
+script 50 362 {
+to '_longPressCallback' {}
+}
+
+script 291 362 {
+whenBroadcastReceived '2'
+forever {
+  if (kStt != 2) {stopTask}
+  'Set LED on pin' 'D10' true
+  waitMillis 1000
+  'Set LED on pin' 'D10' false
+  waitMillis 1000
+}
+}
+
+script 50 674 {
+whenBroadcastReceived '1'
+forever {
+  if (kStt != 1) {stopTask}
+  'Set LED on pin' 'D11' true
+  waitMillis 2000
+  'Set LED on pin' 'D11' false
+  waitMillis 2000
+}
+}
+
+script 375 674 {
+to doubleClickCallback {}
+}
+
+script 628 674 {
+to clickCallback {}
+}
+
+
+module MKE_M01_LED_MODULE
+author MinhKhanh614
+version 1 0 
+choices pinList D9 D10 D11 D12 D13 
+description ''
+
+  spec ' ' 'Set LED on pin' 'Set LED on pin _ to state _' 'str.pinList bool' 'D9' true
+  spec ' ' 'myBlock' 'Set LED on pin _ to state _' 'str.pinList num' 'D9' 1
+
+to 'Set LED on pin' _pin _state {
+  local 'var_pin' -1
+  if (_pin == 'D9') {
+    var_pin = 13
+  } (_pin == 'D10') {
+    var_pin = 5
+  } (_pin == 'D11') {
+    var_pin = 23
+  } (_pin == 'D12') {
+    var_pin = 19
+  } (_pin == 'D13') {
+    var_pin = 18
+  }
+  if _state {
+    digitalWriteOp var_pin true
+  } else {
+    digitalWriteOp var_pin false
+  }
+}
+
+to myBlock _pin _stateInput {
+  local 'var_pin' -1
+  if (_pin == 'D9') {
+    var_pin = 13
+  } (_pin == 'D10') {
+    var_pin = 5
+  } (_pin == 'D11') {
+    var_pin = 23
+  } (_pin == 'D12') {
+    var_pin = 19
+  } (_pin == 'D13') {
+    var_pin = 18
+  }
+  _stateInput = (ifExpression (_stateInput > 0) 1 0)
+  if (_stateInput == 1) {
+    digitalWriteOp var_pin true
+  } else {
+    digitalWriteOp var_pin false
+  }
+}
+
+
+module OneButton
+author minhkhanh210
+version 1 1 
+choices _buttonPinList D9 D10 D11 D12 D13 
+choices buttonEventList clicked 'double clicked' 'long clicked' 
+description 'Thư viện nút nhấn đa sự kiện cho MicroBlocks.'
+variables _buttonState _lastDebounceTime _debounceDelay _buttonPin _buttonPressed _clickCallback _longPressCallback _doubleClickCallback _longPressTime _pressStartTime _lastClickTime _clickCount 
+
+  spec ' ' 'khởi tạo nút nhấn' 'khởi tạo nút nhấn ở chân _' 'str._buttonPinList' 'D9'
+  spec ' ' 'đặt debounce' 'đặt thời gian debounce là _ ms' 'num' 50
+  spec ' ' 'đặt long press' 'đặt thời gian nhấn giữ là _ ms' 'num' 1000
+  spec ' ' 'khi nhấn nút' 'khi nhấn nút thì _' 'any'
+  spec ' ' 'khi nhấn giữ nút' 'khi nhấn giữ nút thì _' 'any'
+  spec ' ' 'khi nhấn đúp nút' 'khi nhấn đúp nút thì _' 'any'
+  spec ' ' 'kiểm tra nút' 'kiểm tra trạng thái nút'
+  spec 'r' 'trạng thái nút' 'trạng thái nút'
+  spec 'r' 'is button event' 'is button pin _ _' 'str._buttonPinList str.buttonEventList' 'D9' 'clicked'
+  spec ' ' 'khởi tạo nút nhấn ở chân' 'khởi tạo nút nhấn ở chân _pinLabel _' 'str' '1'
+
+to 'is button pin _ _' _pinLabel _event {
+  local 'pinNum' -1
+  if (_pinLabel == 'D9') {
+    pinNum = 13
+  } true {
+    v if
+  } (_pinLabel == 'D10') {
+    pinNum = 5
+  } true {
+    v if
+  } (_pinLabel == 'D11') {
+    pinNum = 23
+  } true {
+    v if
+  } (_pinLabel == 'D12') {
+    pinNum = 19
+  } true {
+    v if
+  } (_pinLabel == 'D13') {
+    pinNum = 18
+  }
+  if (pinNum != _buttonPin) {
+    return 0
+  }
+  if (_event == 'clicked') {
+    return (_buttonPressed == 0)
+  } true {
+    v if
+  } (_event == 'long clicked') {
+    return ('_buttonPressed' '==' 0 && (millisSince 0 '-' _pressStartTime) '>' _longPressTime)
+  } true {
+    v if
+  } (_event == 'double clicked') {
+    return (_clickCount == 2)
+  } else {
+    return 0
+  }
+}
+
+to 'khi nhấn giữ nút thì' _handler {
+  _longPressCallback = _handler
+}
+
+to 'khi nhấn nút thì' _handler {
+  _clickCallback = _handler
+}
+
+to 'khi nhấn đúp nút thì' _handler {
+  _doubleClickCallback = _handler
+}
+
+to 'khởi tạo nút nhấn ở chân' _pinLabel {
+  if (_pinLabel == ('[data:toString]' 'D9')) {
+    _buttonPin = 13
+    sayIt '_buttonPin:' _buttonPin
+  } (_pinLabel == ('[data:toString]' 'D11')) {
+    _buttonPin = 23
+    sayIt '_buttonPin:' _buttonPin
+  } (_pinLabel == ('[data:toString]' 'D12')) {
+    _buttonPin = 19
+    sayIt '_buttonPin:' _buttonPin
+  } (_pinLabel == ('[data:toString]' 'D13')) {
+    _buttonPin = 18
+    sayIt '_buttonPin:' _buttonPin
+  }
+  _buttonState = (digitalReadOp _buttonPin)
+  _buttonPressed = _buttonState
+  _lastDebounceTime = (millisOp)
+  _pressStartTime = 0
+  _lastClickTime = 0
+  _clickCount = 0
+}
+
+to 'kiểm tra trạng thái nút' {
+  _clickCallback = 1
+  _longPressCallback = 1
+  _doubleClickCallback = 1
+  _debounceDelay = 50
+  _longPressTime = 1000
+  local 'reading' (digitalReadOp _buttonPin)
+  if (reading != _buttonState) {
+    _lastDebounceTime = (millisOp)
+  }
+  if (((millisOp) - _lastDebounceTime) > _debounceDelay) {
+    if (reading != _buttonPressed) {
+      _buttonPressed = reading
+      if (_buttonPressed == (booleanConstant false)) {
+        _pressStartTime = (millisOp)
+      } else {
+        local 'pressDuration' ((millisOp) - _pressStartTime)
+        if (pressDuration > _longPressTime) {
+          if (_longPressCallback != 0) {'_longPressCallback'}
+          _clickCount = 0
+        } else {
+          if (((millisOp) - _lastClickTime) < 400) {
+            _clickCount = (_clickCount + 1)
+          } else {
+            _clickCount = 1
+          }
+          _lastClickTime = (millisOp)
+          if (_clickCount == 2) {
+            if (_doubleClickCallback != 0) {doubleClickCallback}
+            _clickCount = 0
+          } else {
+            if (_clickCallback != 0) {clickCallback}
+          }
+        }
+      }
+    }
+  }
+  _buttonState = reading
+}
+
+to 'trạng thái nút' {
+  return _buttonPressed
+}
+
+to 'đặt thời gian debounce là' _ms {
+  _debounceDelay = _ms
+}
+
+to 'đặt thời gian nhấn giữ là' _ms {
+  _longPressTime = _ms
+}
+
