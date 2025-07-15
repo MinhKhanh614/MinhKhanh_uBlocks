@@ -1,26 +1,21 @@
-module 'MP3 Player' Output
+module 'MKE_M11_UART_MP3_PLAYER' Output
 author MinhKhanh210
 version 1 14 
-choices mp3PlayerType MakerPort 'MakerBit/HyperDuino' DFRobot Octopus 
-description 'Support for Octopus (FN-M16P and YX6300 chips) and DFRobot/HyperDuino/MakerBit/MakerPort) MP3 Players (YX5300, A19HFA440, and GD3300B chips).
-
-Sends commands to MP3 player using software serial via any digital pin on any board.
-
-To use the "mp3 play ... until done" block, connect TX of MP3 player to a second pin and set that pin as the optional "rx pin" in the "mp3 initialize" block .
-'
+choices mp3PlayerType DFRobot 
+description ''
 variables _mp3UseChecksum _mp3Pin _mp3RxPin _mp3Status 
 
-  spec ' ' 'mp3_initialize' 'mp3 initialize _ pin _ : rx pin _' 'menu.mp3PlayerType num num' 'MakerPort' 20 21
-  spec ' ' 'mp3_setVolume' 'mp3 set volume _ (0-30)' 'num' 20
+  spec ' ' 'mp3_initialize' 'M11 MP3 Player | Initialize _ _ _' 'menu.mp3PlayerType num num' 'DFRobot' 13 12
+  spec ' ' 'mp3_setVolume' 'M11 MP3 Player | Set volume level _' 'num' 20
   space
-  spec ' ' 'mp3_playTrack' 'mp3 play track _ in folder _' 'num num' 1 1
-  spec ' ' 'mp3_playTrackUntilDone' 'mp3 play track _ in folder _ until done' 'num num' 1 1
+  spec ' ' 'mp3_playTrack' 'M11 MP3 Player | Play file number _' 'num' 1
+  spec ' ' 'mp3_playTrackUntilDone' 'M11 MP3 Player | Play file number _ until done' 'num' 1
   space
-  spec ' ' 'mp3_nextTrack' 'mp3 play next track'
-  spec ' ' 'mp3_repeatAllInFolder' 'mp3 repeat all in folder _' 'num' 1
+  spec ' ' 'mp3_nextTrack' 'M11 MP3 Player | Play Next'
+  spec ' ' 'mp3_repeatAllInFolder' 'M11 MP3 Player | Repeat all in folder _' 'num' 1
   space
-  spec ' ' 'mp3_pause' 'mp3 pause'
-  spec ' ' 'mp3_resume' 'mp3 resume'
+  spec ' ' 'mp3_pause' 'M11 MP3 Player | Pause'
+  spec ' ' 'mp3_resume' 'M11 MP3 Player | Start (Play continues)'
   space
   spec ' ' '_mp3_sendMP3Cmd' '_mp3_sendMP3Cmd _ _ _' 'auto num num' '0x0C' 0 0
   spec 'r' '_mp3_timeForResponse' '_mp3_timeForResponse timeout _ msecs' 'auto' 1000

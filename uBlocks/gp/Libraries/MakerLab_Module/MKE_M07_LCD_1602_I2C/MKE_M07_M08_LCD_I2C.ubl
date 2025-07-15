@@ -1,6 +1,7 @@
 module MKE_M07_M08_LCD_I2C
 author MinhKhanh210
 version 1 0 
+depends 'LCD Display' 
 description ''
 
   spec ' ' 'M07/08 LCD I2C | Clear' 'M07/08 LCD I2C | Clear'

@@ -1,11 +1,10 @@
-module 'RTC (DS1307)'
+module MKE_M09_REAL_TIME_CLOCK
 author MinhKhanh210
 version 1 1 
-choices DS1307_weekday 'DS1307;Monday' 'DS1307;Tuesday' 'DS1307;Wednesday' 'DS1307;Thursday' 'DS1307;Friday' 'DS1307;Saturday' 'DS1307;Sunday' 
-choices DS1307_mode12 'a.m.' 'p.m.' 
+choices DS1307_weekday 'Monday' 'Tuesday' 'Wednesday' 'Thursday' 'Friday' 'Saturday' 'Sunday' 
+choices DS1307_mode12 'a.m.' 'p.m.'
+depends 'sensorPrims'
 description 'RTC (DS1307)
-
-
 
 The DS1307 is an i2c device (0x68) with a clock, a calendar, and 56 bytes of battery-backed SRAM. The DS1307 provides seconds, minutes, hours, weekday, day, month, and year. The end of a month is automatically adjusted for months with fewer than 31 days, including corrections for leap years. 
 
@@ -13,26 +12,26 @@ https://www.analog.com/media/en/technical-documentation/data-sheets/ds1307.pdf
 
 '
 
-  spec 'r' 'DS1307 hour' 'DS1307 hour'
-  spec 'r' 'DS1307 minute' 'DS1307 minute'
-  spec 'r' 'DS1307 second' 'DS1307 second'
-  spec 'r' 'DS1307 get time' 'DS1307 get time'
-  spec ' ' 'DS1307 set time' 'DS1307 set time to _ _ _' 'num num num' 12 0 0
+  spec 'r' 'DS1307 hour' 'M09 Clock I2C | Get Hour in Time now'
+  spec 'r' 'DS1307 minute' 'M09 Clock I2C | Get Minute in Time now'
+  spec 'r' 'DS1307 second' 'M09 Clock I2C | Get Second in Time now'
+  spec 'r' 'DS1307 get time' 'M09 Clock I2C | Get Time now'
+  spec ' ' 'DS1307 set time' 'M09 Clock I2C | Set Time to Hour _ Minute _ Second _' 'num num num' 12 0 0
   space
-  spec 'r' 'DS1307 hour12' 'DS1307 hour12'
-  spec 'r' 'DS1307 get time12' 'DS1307 get time12'
-  spec ' ' 'DS1307 set time12' 'DS1307 set time12 to _ _ _ _' 'num num num menu.DS1307_mode12' 12 0 0 'a.m.'
+  spec 'r' 'DS1307 hour12' 'M09 Clock I2C | Get Hour12'
+  spec 'r' 'DS1307 get time12' 'M09 Clock I2C | Get Time12'
+  spec ' ' 'DS1307 set time12' 'M09 Clock I2C | Set Time12 to Hour _ Minute _ Second _ Mode _' 'num num num menu.DS1307_mode12' 12 0 0 'a.m.'
   space
-  spec 'r' 'DS1307 weekday' 'DS1307 weekday'
-  spec 'r' 'DS1307 day' 'DS1307 day'
-  spec 'r' 'DS1307 month' 'DS1307 month'
-  spec 'r' 'DS1307 year' 'DS1307 year'
-  spec 'r' 'DS1307 get date' 'DS1307 get date'
-  spec ' ' 'DS1307 set date' 'DS1307 set date to _ _ _ _ (d/m/y)' 'menu.DS1307_weekday num num num' 'DS1307;Monday' 1 1 2025
+  spec 'r' 'DS1307 weekday' 'M09 Clock I2C | Get Days of the Week'
+  spec 'r' 'DS1307 day' 'M09 Clock I2C | Get Day in Calendar'
+  spec 'r' 'DS1307 month' 'M09 Clock I2C | Get Month'
+  spec 'r' 'DS1307 year' 'M09 Clock I2C | Get Year'
+  spec 'r' 'DS1307 get date' 'M09 Clock I2C | Get Calendar'
+  spec ' ' 'DS1307 set date' 'M09 Clock I2C | Set Date to Weekday _ Day _ Month _ Year _' 'menu.DS1307_weekday num num num' 'Monday' 1 1 2025
   space
-  spec ' ' 'DS1307 start clock' 'DS1307 start clock'
-  spec ' ' 'DS1307 stop clock' 'DS1307 stop clock'
-  space
+  spec ' ' 'M09 Clock I2C | Start Clock' 'M09 Clock I2C | Start Clock'
+  spec ' ' 'M09 Clock I2C | Stop Clock' 'M09 Clock I2C | Stop Clock'
+  space 
   spec 'r' '_DS1307_address' '_DS1307_address'
   spec 'r' '_DS1307_bcd2dec' '_DS1307_bcd2dec _' 'num' 32
   spec 'r' '_DS1307_dec2bcd' '_DS1307_dec2bcd _' 'num' 16
@@ -90,7 +89,7 @@ to 'DS1307 second' {
 }
 
 to 'DS1307 set date' weekday day month year {
-  local 'names' ('[data:makeList]' 'DS1307;Monday' 'DS1307;Tuesday' 'DS1307;Wednesday' 'DS1307;Thursday' 'DS1307;Friday' 'DS1307;Saturday' 'DS1307;Sunday')
+  local 'names' ('[data:makeList]' 'Monday' 'Tuesday' 'Wednesday' 'Thursday' 'Friday' 'Saturday' 'Sunday')
   local 'n' ('[data:find]' weekday names)
   local 'date' ('[data:makeList]' (hexToInt '03'))
   '[data:addLast]' ('_DS1307_dec2bcd' (n % 8)) date
