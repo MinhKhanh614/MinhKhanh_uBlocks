@@ -1,23 +1,34 @@
 module MKE_I2C_MOTOR_DRIVER
 author MinhKhanh210
 version 1 0 
-depends 'sensorPrims'
+depends sensorPrims 
+choices motorDC A B 
+choices direct forward backward 
+choices motorRC S1 S2 
+choices address '0' '1' '2' '3' '4' 
 description ''
 variables _pulseMax _pusleMin _MAKERLABVN_I2C_DRIVER_MAX_NUMBER_DRIVER_SUPPORT _MAKERLABVN_I2C_DRIVER_SLAVE_ADDRESS_MIN _MAKERLABVN_I2C_DRIVER_SLAVE_ADDRESS_MAX _MAKERLABVN_I2C_DRIVER_PULSE_TIME_MAX _MAKERLABVN_I2C_DRIVER_PULSE_TIME_MIN _MAX_I2C_MOTOR_DC_SIZE _MAX_I2C_MOTOR_RC_SIZE _DELAY_I2C_SEND _MAKERLABVN_I2C_DRIVER_INDEX_MA _MAKERLABVN_I2C_DRIVER_INDEX_MB _MAKERLABVN_I2C_DRIVER_INDEX_S1 _MAKERLABVN_I2C_DRIVER_INDEX_S2 _I2C_MOTOR_DRIVER_PULSE_DISABLE 
 
-  spec ' ' 'Set max pulse (microsecond)' 'Set max pulse value (microsecond) _ for Servo _ in address _' 'auto str auto' 2350 'S1' 0
-  spec ' ' 'Set min pulse (microsecond)' 'Set min pulse value (microsecond) _ for Servo _ in address _' 'auto str auto' 460 'S1' 0
-  spec ' ' 'Set this driver''s address to' 'Set this driver''s address to _' 'auto' 0
-  spec ' ' '_MKE-M10 Configuration' '_MKE-M10 Configuration'
-  spec 'r' '_addrConvert' '_addrConvert _' 'num' 0
+  spec ' ' '_MKE-M10 Configuration' '_MKE-M10 | register new driver address _' 'num' 0
+  spec ' ' 'runMotor' 'runMotorDC I2C | Address _ Motor _ move _ at power (%) _' 'menu.address menu.motorDC menu.direct num' 0 'A' 'forward' 50
+  spec ' ' 'stopMotorDC I2C | Address' 'stopMotorDC I2C | Address _ Motor _' 'menu.address menu.motorDC' 0 'A'
+  space
+  spec ' ' 'runMotorRC I2C | Address' 'runMotorRC I2C | Address _ Servo _ angle as (0° ~ 180°) _' 'menu.address menu.motorRC num' 0 'S1' 90
+  spec ' ' 'freeMotorRC I2C | Address' 'freeMotorRC I2C | Address _ Servo _' 'menu.address menu.motorRC' 0 'S1'
+  space
+  spec ' ' 'Set this driver''s address to' 'Set this driver''s address to _' 'menu.address' 0
+  spec ' ' 'Set max pulse (microsecond)' 'Set max pulse value (microsecond) _ for Servo _ in address _' 'auto menu.motorRC menu.address' 2350 'S1' 0
+  spec ' ' 'Set min pulse (microsecond)' 'Set min pulse value (microsecond) _ for Servo _ in address _' 'auto menu.motorRC menu.address' 460 'S1' 0
+  space
+  spec 'r' '_addrConvert' '_addrConvert _' 'auto' 0
   spec 'r' '_directConvert' '_directConvert _' 'str' 'forward'
   spec 'r' '_motorConvert' '_motorConvert _' 'str' 'A'
   spec 'r' '_powerConvert' '_powerConvert _' 'num' 50
   spec 'r' '_pulseDegConvert' '_pulseDegConvert _' 'auto' 90
-  spec ' ' 'freeMotorRC I2C | Address' 'freeMotorRC I2C | Address _ Servo _' 'auto str' 0 'S1'
-  spec ' ' 'runMotor' 'runMotorDC I2C | Address _ Motor _ move _ at power (%) _' 'num str auto auto' 0 'A' 'forward' 50
-  spec ' ' 'runMotorRC I2C | Address' 'runMotorRC I2C | Address _ Servo _ angle as (0° ~ 180°) _' 'num str num' 0 'S1' 90
-  spec ' ' 'stopMotorDC I2C | Address' 'stopMotorDC I2C | Address _ Motor _' 'auto str' 0 'A'
+  spec 'r' '_checkSum' '_checkSum _' 'auto' 'aByteArray'
+  spec ' ' '_sendI2cData _ _' '_sendI2cData _ _' 'auto auto' '5_bytes_data' '1_byte_check_sum'
+  spec 'r' '_checkSum' '_checkSum _' 'auto' 'aByteArray'
+  spec 'r' '_getDriverPosition _' '_getDriverPosition _' 'num' 0
 
 to 'Set max pulse (microsecond)' _pulseMaxInput _motorWhich _addressWhich {
   _pulseMax = _pulseMaxInput
@@ -30,34 +41,58 @@ to 'Set min pulse (microsecond)' _pusleMinInput _motorWhich _addressWhich {
 to 'Set this driver' s address to' _address {
 }
 
-to '_MKE-M10 Configuration' {
-  _MAKERLABVN_I2C_DRIVER_MAX_NUMBER_DRIVER_SUPPORT = 5
-  _MAKERLABVN_I2C_DRIVER_SLAVE_ADDRESS_MIN = 64
-  _MAKERLABVN_I2C_DRIVER_SLAVE_ADDRESS_MAX = (_MAKERLABVN_I2C_DRIVER_SLAVE_ADDRESS_MIN + _MAKERLABVN_I2C_DRIVER_MAX_NUMBER_DRIVER_SUPPORT)
-  _MAKERLABVN_I2C_DRIVER_PULSE_TIME_MIN = 460
-  _MAKERLABVN_I2C_DRIVER_PULSE_TIME_MAX = 2350
-  _MAX_I2C_MOTOR_DC_SIZE = 2
-  _MAX_I2C_MOTOR_DC_SIZE = 2
-  _DELAY_I2C_SEND = 15
-  _MAKERLABVN_I2C_DRIVER_INDEX_MA = 0
-  _MAKERLABVN_I2C_DRIVER_INDEX_MB = 1
-  _MAKERLABVN_I2C_DRIVER_INDEX_S1 = 0
-  _MAKERLABVN_I2C_DRIVER_INDEX_S2 = 1
-  _I2C_MOTOR_DRIVER_PULSE_DISABLE = 3000
+to '_MKE-M10 Configuration' newDriver {
+  local 'addr' ('_addrConvert' newDriver)
+  if (isType addr 'boolean') {
+    sayIt 'Invalid address'
+    return 0
+  }
+  if (_listDriverManager == 0) {
+    _listDriverManager = ('[data:makeList]')
+    _list_position_driver = ('[data:makeList]')
+    '[data:addLast]' ('[data:makeList]' addr 0 0 0 0 460 2350 90 460 2350 90) _listDriverManager
+    comment 'Cấu trúc dữ liệu của 1 driver bao như sau:
+[ Driver:addr | A:dir | A:pwr | B:dir | B:dir | S1:max | S1:min | S1:deg | S2:max | S2:min | S2:deg ]
+vị trí từ 1 tới 11.  '
+    '[data:addLast]' addr _list_position_driver
+    comment 'Tạo danh sách hiển thị vị trí của driver từ 1 đến 5'
+    sayIt '1st register, max register is 5'
+    return 0
+  } else {
+    for i (size _listDriverManager) {
+      if ((at 1 (at i _listDriverManager)) == addr) {
+        sayIt 'Driver at this address already exists'
+        return 0
+      }
+    }
+    '[data:addLast]' ('[data:makeList]' addr 0 0 0 0 460 2350 90 460 2350 90) _listDriverManager
+    '[data:addLast]' addr _list_position_driver
+    sayIt ('[data:find]' (at 'last' _listDriverManager) _listDriverManager) 'register, max is 5'
+    return 0
+  }
 }
 
 to '_addrConvert' _addrIn {
-  for i 5 {
-    local 'i-1' (i - 1)
-    if (_addrIn == i-1) {
-      sayIt i-1 (64 + i-1)
-      return (64 + i-1)
-    }
+  if (not (isType _addrIn 'number')) {_addrIn = ('[data:convertType]' _addrIn 'number')}
+  for i ('[data:range]' 0 4) {
+    if (_addrIn == i) {return (64 + i)}
   }
+}
+
+to '_checkSum' byteArray {
+  local 'checkSum' 0
+  for i (size byteArray) {
+    checkSum = (checkSum + (at i byteArray))
+  }
+  return checkSum
 }
 
 to '_directConvert' _directIn {
   return (ifExpression (_directIn == ('[data:toString]' 'forward')) 1 (ifExpression (_directIn == ('[data:toString]' 'backward')) 0 (booleanConstant false)))
+}
+
+to '_getDriverPosition _' addr {
+  return ('[data:find]' ('_addrConvert' addr) _list_position_driver)
 }
 
 to '_motorConvert' _motorIn {
@@ -70,6 +105,14 @@ to '_powerConvert' _powerIn {
 
 to '_pulseDegConvert' _DegIn {
   return ('[misc:rescale]' _DegIn 0 180 _pusleMin _pulseMax)
+}
+
+to '_sendI2cData _ _' data checkSumCalc {
+  '[data:addLast]' checkSumCalc data
+  sayIt ('[data:asByteArray]' data) (at 1 data) (at 2 data) (at 3 data) (at 4 data) (at 5 data) (at 6 data)
+  waitMicros 15
+  '[sensors:i2cWrite]' (at 1 data) ('[data:asByteArray]' data)
+  waitMicros 15
 }
 
 to 'freeMotorRC I2C | Address' _address _motorWhich {
@@ -107,35 +150,13 @@ to getModeName modeId {
 }
 
 to runMotor _addr _motorWhich _direction _powerPercent {
-  local 'var' ('[data:newByteArray]' 6)
-  atPut 1 var ('_addrConvert' _addr)
-  atPut 2 var 1
-  atPut 3 var ('_motorConvert' _motorWhich)
-  atPut 4 var ('_powerConvert' _powerPercent)
-  atPut 5 var ('_directConvert' _direction)
-  local 'checkSum' 0
-  for i ((size var) - 1) {
-    checkSum = (checkSum + (at i var))
-  }
-  atPut 6 var (checkSum & (hexToInt 'FF'))
-  sayIt ('[data:asByteArray]' var) (at 1 var) (at 2 var) (at 3 var) (at 4 var) (at 5 var) (at 6 var)
-  '[sensors:i2cWrite]' ('_addrConvert' _addr) var
+  local 'tempData' ('[data:makeList]' ('_addrConvert' _addr) 1 ('_motorConvert' _motorWhich) ('_powerConvert' _powerPercent) ('_directConvert' _direction))
+  '_sendI2cData _ _' tempData (('_checkSum' tempData) & (hexToInt 'FF'))
 }
 
 to 'runMotorRC I2C | Address' _address _motorWhich _angle {
-  local 'var' ('[data:newByteArray]' 6)
-  atPut 1 var ('_addrConvert' _address)
-  atPut 2 var 0
-  atPut 3 var ('_motorConvert' _motorWhich)
-  atPut 4 var ((('_pulseDegConvert' _angle) >> 8) & (hexToInt 'FF'))
-  atPut 5 var (('_pulseDegConvert' _angle) & (hexToInt 'FF'))
-  local 'checkSum' 0
-  for i ((size var) - 1) {
-    checkSum = (checkSum + (at i var))
-  }
-  atPut 6 var (checkSum & (hexToInt 'FF'))
-  sayIt ('[data:asByteArray]' var) (at 1 var) (at 2 var) (at 3 var) (at 4 var) (at 5 var) (at 6 var)
-  '[sensors:i2cWrite]' ('_addrConvert' _addr) var
+  local 'tempData' ('[data:makeList]' ('_addrConvert' _address) 0 ('_motorConvert' _motorWhich) ((('_pulseDegConvert' _angle) >> 8) & (hexToInt 'FF')) (('_pulseDegConvert' _angle) & (hexToInt 'FF')))
+  '_sendI2cData _ _' tempData (('_checkSum' tempData) & (hexToInt 'FF'))
 }
 
 to 'stopMotorDC I2C | Address' _addresss _motorWhich {
