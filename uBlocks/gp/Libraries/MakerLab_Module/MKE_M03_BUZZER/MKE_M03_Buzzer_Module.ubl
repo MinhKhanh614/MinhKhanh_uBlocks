@@ -1,0 +1,16 @@
+module MKE_M03_Buzzer_Module
+author MinhKhanh210
+version 1 0 
+depends Tone 
+choices KhanhTone_NoteName 'nt;c' 'nt;c#' 'nt;d' 'nt;d#' 'nt;e' 'nt;f' 'nt;f#' 'nt;g' 'nt;g#' 'nt;a' 'nt;a#' 'nt;b' 
+choices KhanhPort D9 D10 D11 D12 D13 
+description ''
+
+  spec ' ' 'M03 Buzzer | Play note' 'M03 Buzzer | Play note _ tone _ for _ seconds from port _' 'str.KhanhTone_NoteName num num str.KhanhPort' 'nt;c' 0 0.25 'D9'
+
+to 'M03 Buzzer | Play note' note tone time port {
+  stopTone
+  'attach buzzer to pin' port
+  'play tone' note tone time
+}
+

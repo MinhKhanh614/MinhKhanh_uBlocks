@@ -3,20 +3,9 @@ author MinhKhanh210
 version 1 0 
 description ''
 
-script 54 74 {
-whenStarted
-forever {
-  if ('is Button port' 'D9' 'Clicked') {sendBroadcast 'event1'}
-  if ('is Button port' 'D9' 'Double-Clicked') {sendBroadcast 'stopEvent1'}
-  if ('is Button port' 'A1' 'Clicked') {sendBroadcast 'event2'}
-  if ('is Button port' 'A1' 'Long-Clicked') {sendBroadcast 'stopEvent2'}
-}
-}
-
-script 472 76 {
+script 410 50 {
 whenBroadcastReceived 'event1'
-forever {
-  if ((getLastBroadcast) == ('[data:toString]' 'stopEvent1')) {stopTask}
+repeatUntil ('is Button port' 'D9' 'Double-Clicked') {
   'Set LED on pin' 'D10' true
   waitMillis 500
   'Set LED on pin' 'D10' false
@@ -24,15 +13,27 @@ forever {
 }
 }
 
-script 484 402 {
-whenBroadcastReceived 'event2'
+script 54 86 {
+whenStarted
 forever {
-  if ((getLastBroadcast) == ('[data:toString]' 'stopEvent2')) {stopTask}
+  if ('is Button port' 'D9' 'Clicked') {sendBroadcast 'event1'}
+  if ('is Button port' 'A1' 'Clicked') {sendBroadcast 'event2'}
+  waitMillis 1000
+}
+}
+
+script 406 300 {
+whenBroadcastReceived 'event2'
+repeatUntil ('is Button port' 'A1' 'Long-Clicked') {
   'Set LED on pin' 'D11' true
   waitMillis 100
   'Set LED on pin' 'D11' false
   waitMillis 100
 }
+}
+
+script 50 2328 {
+to '_updateButtonLoop' {}
 }
 
 
@@ -157,8 +158,6 @@ to '_updateButtonLoop' {
       if (reading != _buttonState) {
         _lastDebounceTime = (millisOp)
         atPut i _lastDebounceTimeList _lastDebounceTime
-      } else {
-        atPut i _buttonClickStateList ('[data:toString]' 'Not-Clicked')
       }
       if (((millisOp) - _lastDebounceTime) > _debounceDelay[]) {
         if (reading != _buttonPressed) {
@@ -246,6 +245,7 @@ to 'is Button port' _pinLabel _stateLabel {
   }
   local '_getButtonState' (at pinLocation _buttonClickStateList)
   if (_getButtonState == _stateLabel) {
+    atPut pinLocation _buttonClickStateList ('[data:toString]' 'Not-Clicked')
     return (booleanConstant true)
   } else {
     return (booleanConstant false)

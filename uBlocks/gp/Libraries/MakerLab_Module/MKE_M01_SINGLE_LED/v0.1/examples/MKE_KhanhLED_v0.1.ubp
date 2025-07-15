@@ -1,0 +1,156 @@
+module main
+author MinhKhanh210
+version 1 0 
+description ''
+variables _LED_pinList _LED_delayOnList _LED_delayOffList _LED_repeatCountList khanhList 
+
+  spec ' ' 'Set LED on pin (on or off)' '_Set LED on the pin _ to ON for _ (s), to OFF for _ (s), repeat _ (times)' 'str auto auto auto' 'D9' 1 1 1
+  spec 'r' '_checkPortToPin2' '_checkPortToPinLED _' 'str' 'D9'
+  spec ' ' '_checkTypeOfProcess' '_checkTypeOfProcess _ _ _' 'auto auto auto' 10 '10' '10'
+  spec ' ' '_onThenOff' '_onThenOff'
+  spec ' ' '_onThenOffForever' '_onThenOffForever'
+  spec ' ' '_runLEDinList' '_runLEDinList'
+
+to 'Set LED on pin (on or off)' LED_pinLabel LED_delayTimeON LED_delayTimeOFF LED_count {
+  comment 'Kiểm tra có sẵn danh sách hay chưa'
+  if (_LED_pinList == 0) {
+    comment 'Nếu chưa thì khởi tạo danh sách mới '
+    _LED_pinList = ('[data:makeList]')
+    comment 'Tạo danh sách chứa dữ liệu để xử lý'
+    _LED_delayOnList = ('[data:makeList]')
+    _LED_delayOffList = ('[data:makeList]')
+    _LED_repeatCountList = ('[data:makeList]')
+  }
+  comment 'Chuyển đổi port MKE Shield sang ESP32 pin'
+  local 'pinConvert' ('_checkPortToPin2' LED_pinLabel)
+  comment 'Kiểm tra xem có tồn tại pin trong danh sách hay chưa'
+  local 'pinCheckPositionInList' ('[data:find]' pinConvert _LED_pinList)
+  comment 'Nếu không tồn tại thì sẽ trả -1'
+  if (pinCheckPositionInList < 0) {
+    comment 'Kiểm tra chân pin'
+    if (pinConvert != -1) {
+      comment 'Nếu chân pin hợp lệ bắt đầu gán các giá trị vào danh sách'
+      '[data:addLast]' pinConvert _LED_pinList
+      '[data:addLast]' LED_delayTimeON _LED_delayOnList
+      '[data:addLast]' LED_delayTimeOFF _LED_delayOffList
+      '[data:addLast]' LED_count _LED_repeatCountList
+      comment 'Gọi hàm xử lý'
+      sendBroadcast '_runLEDinList'
+    }
+  } else {
+    comment 'Nếu tồn tại thì cập nhật các giá trị xử lý'
+    atPut pinCheckPositionInList _LED_delayOnList LED_delayTimeON
+    atPut pinCheckPositionInList _LED_delayOffList LED_delayTimeOFF
+    atPut pinCheckPositionInList _LED_repeatCountList LED_count
+    comment 'Gọi hàm xử lý'
+    sendBroadcast '_runLEDinList'
+  }
+}
+
+to '_checkPortToPin2' _pinLabel {
+  if (_pinLabel == ('[data:toString]' 'D9')) {
+    return 13
+  } (_pinLabel == ('[data:toString]' 'D11')) {
+    return 23
+  } (_pinLabel == ('[data:toString]' 'D12')) {
+    return 19
+  } (_pinLabel == ('[data:toString]' 'D13')) {
+    return 18
+  } (_pinLabel == ('[data:toString]' 'A1')) {
+    return 34
+  } (_pinLabel == ('[data:toString]' 'A2')) {
+    return 33
+  } (_pinLabel == ('[data:toString]' 'A3')) {
+    return 32
+  } (_pinLabel == ('[data:toString]' 'D10')) {
+    return 5
+  } else {
+    return -1
+  }
+}
+
+to '_checkTypeOfProcess' dON dOFF cRepeat {
+}
+
+to '_onThenOff' {
+  sayIt 123
+  for i (size _LED_pinList) {
+    local 'getPinFromList' (at i _LED_pinList)
+    local 'get_LED_delayOn_fromLIst' (at i _LED_delayOnList)
+    local 'get_LED_delayOff_fromLIst' (at i _LED_delayOffList)
+    local 'get_LED_repeatCount_fromLIst' (at i _LED_repeatCountList)
+    repeatUntil (LED_count == 0) {
+      digitalWriteOp LED_pin true
+      waitMillis (LED_on * 1000)
+      digitalWriteOp LED_pin false
+      waitMillis (LED_off * 1000)
+      LED_count += -1
+    }
+  }
+}
+
+to '_onThenOffForever' {
+  sayIt 123
+  for i (size _LED_pinList) {
+    local 'getPinFromList' (at i _LED_pinList)
+    local 'get_LED_delayOn_fromLIst' (at i _LED_delayOnList)
+    local 'get_LED_delayOff_fromLIst' (at i _LED_delayOffList)
+    local 'get_LED_repeatCount_fromLIst' (at i _LED_repeatCountList)
+    repeatUntil (get_LED_repeatCount_fromLIst != -1) {
+      digitalWriteOp getPinFromList true
+      waitMillis (get_LED_delayOn_fromLIst * 1000)
+      digitalWriteOp getPinFromList false
+      waitMillis (get_LED_delayOff_fromLIst * 1000)
+    }
+  }
+}
+
+to '_runLEDinList' {
+  if (_LED_pinList != 0) {for i (size _LED_pinList) {
+    local 'get_LED_repeatCount_fromLIst' (at i _LED_repeatCountList)
+    if (get_LED_repeatCount_fromLIst != -1) {
+      sendBroadcast '_onThenOff'
+    } else {
+      sendBroadcast '_onThenOffForever'
+    }
+  }
+}
+}
+
+script 54 50 {
+to 'Set LED on pin (on or off)' {}
+}
+
+script 110 1653 {
+'Set LED on pin (on or off)' 'D11' 1 1 -1
+}
+
+script 54 1737 {
+'Set LED on pin (on or off)' 'D10' 1 1 1
+}
+
+script 54 1860 {
+to '_runLEDinList' {}
+}
+
+script 524 1867 {
+local 'var' ('[data:makeList]' getPinFromList get_LED_delayOn_fromLIst get_LED_delayOff_fromLIst get_LED_repeatCount_fromLIst)
+}
+
+script 64 2296 {
+to '_onThenOffForever' {}
+}
+
+script 525 2661 {
+callCustomCommand '_onThenOff' var
+callCustomCommand '_onThenOffForever' var
+for i (size _LED_pinList) {
+  sayIt (at i _LED_pinList)
+  waitMillis 500
+}
+}
+
+script 53 2959 {
+to '_onThenOff' {}
+}
+

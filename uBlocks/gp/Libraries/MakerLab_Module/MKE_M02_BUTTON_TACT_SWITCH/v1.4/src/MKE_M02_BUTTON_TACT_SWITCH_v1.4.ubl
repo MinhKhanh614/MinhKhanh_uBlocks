@@ -1,92 +1,3 @@
-module main
-author MinhKhanh210
-version 1 0 
-description ''
-
-script 54 74 {
-whenStarted
-forever {
-  if ('is Button port' 'D9' 'Clicked') {sendBroadcast 'event1'}
-  if ('is Button port' 'D9' 'Double-Clicked') {sendBroadcast 'stopEvent1'}
-  if ('is Button port' 'A1' 'Clicked') {sendBroadcast 'event2'}
-  if ('is Button port' 'A1' 'Long-Clicked') {sendBroadcast 'stopEvent2'}
-}
-}
-
-script 472 76 {
-whenBroadcastReceived 'event1'
-forever {
-  if ((getLastBroadcast) == ('[data:toString]' 'stopEvent1')) {stopTask}
-  'Set LED on pin' 'D10' true
-  waitMillis 500
-  'Set LED on pin' 'D10' false
-  waitMillis 500
-}
-}
-
-script 484 402 {
-whenBroadcastReceived 'event2'
-forever {
-  if ((getLastBroadcast) == ('[data:toString]' 'stopEvent2')) {stopTask}
-  'Set LED on pin' 'D11' true
-  waitMillis 100
-  'Set LED on pin' 'D11' false
-  waitMillis 100
-}
-}
-
-
-module MKE_M01_LED_MODULE
-author MinhKhanh210
-version 1 0 
-choices pinListLED D9 D10 D11 D12 D13 
-description ''
-
-  spec ' ' 'Set LED on pin' 'Set LED on pin _ to state _' 'str.pinListLED bool' 'D9' true
-  spec ' ' 'myBlock' 'Set LED on pin _ to state _' 'str.pinListLED num' 'D9' 1
-
-to 'Set LED on pin' _pin _state {
-  local 'var_pin' -1
-  if (_pin == 'D9') {
-    var_pin = 13
-  } (_pin == 'D10') {
-    var_pin = 5
-  } (_pin == 'D11') {
-    var_pin = 23
-  } (_pin == 'D12') {
-    var_pin = 19
-  } (_pin == 'D13') {
-    var_pin = 18
-  }
-  if _state {
-    digitalWriteOp var_pin true
-  } else {
-    digitalWriteOp var_pin false
-  }
-}
-
-to myBlock _pin _stateInput {
-  local 'var_pin' -1
-  if (_pin == 'D9') {
-    var_pin = 13
-  } (_pin == 'D10') {
-    var_pin = 5
-  } (_pin == 'D11') {
-    var_pin = 23
-  } (_pin == 'D12') {
-    var_pin = 19
-  } (_pin == 'D13') {
-    var_pin = 18
-  }
-  _stateInput = (ifExpression (_stateInput > 0) 1 0)
-  if (_stateInput == 1) {
-    digitalWriteOp var_pin true
-  } else {
-    digitalWriteOp var_pin false
-  }
-}
-
-
 module MKE_M02_BUTTON_TACT_SWITCH
 author MinhKhanh210
 version 1 3 
@@ -157,8 +68,6 @@ to '_updateButtonLoop' {
       if (reading != _buttonState) {
         _lastDebounceTime = (millisOp)
         atPut i _lastDebounceTimeList _lastDebounceTime
-      } else {
-        atPut i _buttonClickStateList ('[data:toString]' 'Not-Clicked')
       }
       if (((millisOp) - _lastDebounceTime) > _debounceDelay[]) {
         if (reading != _buttonPressed) {
@@ -246,6 +155,7 @@ to 'is Button port' _pinLabel _stateLabel {
   }
   local '_getButtonState' (at pinLocation _buttonClickStateList)
   if (_getButtonState == _stateLabel) {
+    atPut pinLocation _buttonClickStateList ('[data:toString]' 'Not-Clicked')
     return (booleanConstant true)
   } else {
     return (booleanConstant false)
