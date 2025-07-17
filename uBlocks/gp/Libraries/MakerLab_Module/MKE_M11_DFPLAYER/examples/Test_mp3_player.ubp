@@ -1,11 +1,24 @@
-module 'MKE_M11_UART_MP3_PLAYER' Output
+module main
+author unknown
+version 1 0 
+description ''
+
+script 208 238 {
+whenStarted
+mp3_initialize 'DFRobot' 43 44
+mp3_setVolume 20
+mp3_nextTrack
+}
+
+
+module MKE_M11_UART_MP3_PLAYER Output
 author MinhKhanh210
 version 1 14 
 choices mp3PlayerType DFRobot 
 description ''
 variables _mp3UseChecksum _mp3Pin _mp3RxPin _mp3Status 
 
-  spec ' ' 'mp3_initialize' 'M11 MP3 Player | Initialize _ _ _' 'menu.mp3PlayerType num num' 'DFRobot' 13 12
+  spec ' ' 'mp3_initialize' 'M11 MP3 Player | Initialize _ TX pin _ RX pin _' 'menu.mp3PlayerType num num' 'DFRobot' 43 44
   spec ' ' 'mp3_setVolume' 'M11 MP3 Player | Set volume level _' 'num' 20
   space
   spec ' ' 'mp3_playTrack' 'M11 MP3 Player | Play file number _' 'num' 1

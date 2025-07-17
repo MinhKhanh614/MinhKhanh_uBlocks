@@ -1,0 +1,205 @@
+module main
+author unknown
+version 1 0 
+description ''
+
+script 50 218 {
+whenStarted
+'[sensors:i2cSetPins]' 8 9
+'DS1307 set time' 14 24 0
+waitMillis 1000
+forever {
+  sayIt ('DS1307 get time12')
+  waitMillis 1000
+}
+}
+
+
+module MKE_M09_REAL_TIME_CLOCK
+author MinhKhanh210
+version 1 1 
+depends sensorPrims 
+choices DS1307_weekday Monday Tuesday Wednesday Thursday Friday Saturday Sunday 
+choices DS1307_mode12 'a.m.' 'p.m.' 
+description 'RTC (DS1307)
+
+
+
+The DS1307 is an i2c device (0x68) with a clock, a calendar, and 56 bytes of battery-backed SRAM. The DS1307 provides seconds, minutes, hours, weekday, day, month, and year. The end of a month is automatically adjusted for months with fewer than 31 days, including corrections for leap years. 
+
+
+
+https://www.analog.com/media/en/technical-documentation/data-sheets/ds1307.pdf
+
+
+
+'
+
+  spec 'r' 'DS1307 hour' 'M09 Clock I2C | Get Hour in Time now'
+  spec 'r' 'DS1307 minute' 'M09 Clock I2C | Get Minute in Time now'
+  spec 'r' 'DS1307 second' 'M09 Clock I2C | Get Second in Time now'
+  spec 'r' 'DS1307 get time' 'M09 Clock I2C | Get Time now'
+  spec ' ' 'DS1307 set time' 'M09 Clock I2C | Set Time to Hour _ Minute _ Second _' 'num num num' 12 0 0
+  space
+  spec 'r' 'DS1307 hour12' 'M09 Clock I2C | Get Hour12'
+  spec 'r' 'DS1307 get time12' 'M09 Clock I2C | Get Time12'
+  spec ' ' 'DS1307 set time12' 'M09 Clock I2C | Set Time12 to Hour _ Minute _ Second _ Mode _' 'num num num menu.DS1307_mode12' 12 0 0 'a.m.'
+  space
+  spec 'r' 'DS1307 weekday' 'M09 Clock I2C | Get Days of the Week'
+  spec 'r' 'DS1307 day' 'M09 Clock I2C | Get Day in Calendar'
+  spec 'r' 'DS1307 month' 'M09 Clock I2C | Get Month'
+  spec 'r' 'DS1307 year' 'M09 Clock I2C | Get Year'
+  spec 'r' 'DS1307 get date' 'M09 Clock I2C | Get Calendar'
+  spec ' ' 'DS1307 set date' 'M09 Clock I2C | Set Date to Weekday _ Day _ Month _ Year _' 'menu.DS1307_weekday num num num' 'Monday' 1 1 2025
+  space
+  spec ' ' 'M09 Clock I2C | Start Clock' 'M09 Clock I2C | Start Clock'
+  spec ' ' 'M09 Clock I2C | Stop Clock' 'M09 Clock I2C | Stop Clock'
+  space
+  spec 'r' '_DS1307_address' '_DS1307_address'
+  spec 'r' '_DS1307_bcd2dec' '_DS1307_bcd2dec _' 'num' 32
+  spec 'r' '_DS1307_dec2bcd' '_DS1307_dec2bcd _' 'num' 16
+  spec 'r' '_DS1307_00' '_DS1307_00 _' 'num' 7
+
+to 'DS1307 day' {
+  return ('_DS1307_bcd2dec' (i2cGet ('_DS1307_address') 4))
+}
+
+to 'DS1307 get date' {
+  return ('[data:join]' ('_DS1307_00' ('DS1307 day')) '.' ('_DS1307_00' ('DS1307 month')) '.' ('DS1307 year'))
+}
+
+to 'DS1307 get time' {
+  return ('[data:join]' ('_DS1307_00' ('DS1307 hour')) ':' ('_DS1307_00' ('DS1307 minute')) ':' ('_DS1307_00' ('DS1307 second')))
+}
+
+to 'DS1307 get time12' {
+  local 'hour' ('[data:split]' ('DS1307 hour12') ' ')
+  return ('[data:join]' (at 1 hour) ':' ('_DS1307_00' ('DS1307 minute')) ':' ('_DS1307_00' ('DS1307 second')) ' ' (at 2 hour))
+}
+
+to 'DS1307 hour' {
+  return ('_DS1307_bcd2dec' (i2cGet ('_DS1307_address') 2))
+}
+
+to 'DS1307 hour12' {
+  local 'hour' ('DS1307 hour')
+  local 'mode' 'a.m.'
+  if (or (hour > 12) (hour == 0)) {
+    mode = 'p.m.'
+    if (and (hour == 0) (or (('DS1307 minute') > 0) (('DS1307 second') > 0))) {
+      mode = 'a.m.'
+    }
+    hour = (hour % 12)
+    if (hour == 0) {
+      hour = 12
+    }
+  } else {
+    if (and (hour == 12) (or (('DS1307 minute') > 0) (('DS1307 second') > 0))) {mode = 'p.m.'}
+  }
+  return ('[data:join]' hour ' ' mode)
+}
+
+to 'DS1307 minute' {
+  return ('_DS1307_bcd2dec' (i2cGet ('_DS1307_address') 1))
+}
+
+to 'DS1307 month' {
+  return ('_DS1307_bcd2dec' (i2cGet ('_DS1307_address') 5))
+}
+
+to 'DS1307 second' {
+  return ('_DS1307_bcd2dec' ((i2cGet ('_DS1307_address') 0) & (hexToInt '7F')))
+}
+
+to 'DS1307 set date' weekday day month year {
+  local 'names' ('[data:makeList]' 'Monday' 'Tuesday' 'Wednesday' 'Thursday' 'Friday' 'Saturday' 'Sunday')
+  local 'n' ('[data:find]' weekday names)
+  local 'date' ('[data:makeList]' (hexToInt '03'))
+  '[data:addLast]' ('_DS1307_dec2bcd' (n % 8)) date
+  '[data:addLast]' ('_DS1307_dec2bcd' (day % 32)) date
+  '[data:addLast]' ('_DS1307_dec2bcd' (month % 13)) date
+  '[data:addLast]' ('_DS1307_dec2bcd' (year % 2000)) date
+  '[sensors:i2cWrite]' ('_DS1307_address') date
+}
+
+to 'DS1307 set time' hour minute second {
+  local 'time' ('[data:makeList]' (hexToInt '00'))
+  '[data:addLast]' ('_DS1307_dec2bcd' (second % 60)) time
+  '[data:addLast]' ('_DS1307_dec2bcd' (minute % 60)) time
+  '[data:addLast]' ('_DS1307_dec2bcd' (hour % 24)) time
+  '[sensors:i2cWrite]' ('_DS1307_address') time
+}
+
+to 'DS1307 set time12' hour minute second mode {
+  if (and (0 < hour) (hour <= 12)) {
+    if (mode == 'a.m.') {
+      if (hour == 12) {if (or (minute > 0) (second > 0)) {
+        hour = 0
+      }}
+    } else {
+      if (hour == 12) {
+        if (and (minute == 0) (second == 0)) {hour = 0}
+      } else {
+        hour = ((hour + 12) % 24)
+      }
+    }
+    'DS1307 set time' hour minute second
+  }
+}
+
+to 'DS1307 start clock' {
+  local 'second' (i2cGet ('_DS1307_address') 0)
+  i2cSet ('_DS1307_address') 0 (second & (hexToInt '7F'))
+}
+
+to 'DS1307 stop clock' {
+  local 'second' (i2cGet ('_DS1307_address') 0)
+  i2cSet ('_DS1307_address') 0 (second | (hexToInt '80'))
+}
+
+to 'DS1307 weekday' {
+  return ('_DS1307_bcd2dec' (i2cGet ('_DS1307_address') 3))
+}
+
+to 'DS1307 year' {
+  return (2000 + ('_DS1307_bcd2dec' (i2cGet ('_DS1307_address') 6)))
+}
+
+to '_DS1307_00' val {
+  local 's' ''
+  if (val < 10) {
+    s = 0
+  }
+  s = ('[data:join]' s val)
+  return s
+}
+
+to '_DS1307_address' {
+  return (hexToInt '68')
+}
+
+to '_DS1307_bcd2dec' val {
+  return (((val / 16) * 10) + (val % 16))
+}
+
+to '_DS1307_dec2bcd' val {
+  return (((val / 10) * 16) + (val % 10))
+}
+
+
+module 'Sensor Primitives' Input
+author MicroBlocks
+version 1 1 
+tags tilt acceleration light sensor capacitive button 
+description 'Provides blocks to read tilt in the three axes, acceleration, temperature and light level. Many boards come with this particular set of sensors, such as the micro:bit, the Circuit Playground Express, the Calliope or the Citilab ED1.'
+
+  spec 'r' '[sensors:tiltX]' 'tilt x'
+  spec 'r' '[sensors:tiltY]' 'tilt y'
+  spec 'r' '[sensors:tiltZ]' 'tilt z'
+  spec 'r' '[display:lightLevel]' 'light level'
+  spec 'r' '[sensors:temperature]' 'temperature (°C)'
+  space
+  spec 'r' '[sensors:touchRead]' 'capacitive sensor _' 'num' 1
+  space
+  spec ' ' '[sensors:i2cSetClockSpeed]' 'set i2c clock speed _' 'num' 400000
+  spec ' ' '[sensors:i2cSetPins]' 'set i2c pins SDA _ SCL _' 'num num' 4 5
