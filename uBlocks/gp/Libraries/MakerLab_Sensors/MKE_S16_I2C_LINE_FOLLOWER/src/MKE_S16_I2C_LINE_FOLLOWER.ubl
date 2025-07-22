@@ -1,0 +1,115 @@
+module MKE_S16_I2C_LINE_FOLLOWER
+author MinhKhanh210
+version 1 0 
+description 'S16 MakerLab sensor library'
+
+  spec ' ' 'S16 I2C | Inittialize address _ with _ sensors' 'S16 I2C | Inittialize address _ with _ sensors' 'auto num' '2A' 5
+  space
+  spec ' ' 'S16 I2C | Address _ Set Black' 'S16 I2C | Address _ Set Black' 'auto' '2A'
+  spec ' ' 'S16 I2C | Address _ Set White' 'S16 I2C | Address _ Set White' 'auto' '2A'
+  space
+  spec 'r' 'S16 I2C | Address _ Get value' 'S16 I2C | Address _ Get value' 'auto' '2A'
+  spec 'r' 'S16 I2C | Address _ Get value from sensor _' 'S16 I2C | Address _ Get value of sensor _' 'auto num' '2A' 1
+  spec 'r' 'S16 I2C | Address _ Get raw value from sensor _' 'S16 I2C | Address _ Get raw value of sensor _' 'auto auto' '2A' 1
+  spec 'r' 'S16 I2C | Address _ Get threshold of sensor _' 'S16 I2C | Address _ Get threshold of sensor _' 'auto num' '2A' 1
+  space
+  spec ' ' '_getDataOverI2C' '_getDataOverI2C'
+  spec 'r' '_Convert address _ to DEC value' '_Convert address _ to DEC value' 'auto' '2A'
+  spec 'r' '_DEC' '_Convert value _ at DEC radix to _ radix Length _ Reversed _' 'num auto num bool' 255 2 4 false
+
+to 'S16 I2C | Address _ Get raw value from sensor _' address index {
+  return (at index (at ('[data:find]' ('_Convert address _ to DEC value' address) _listCountAddress) _listCountData))
+}
+
+to 'S16 I2C | Address _ Get threshold of sensor _' address index {
+  return (at (index + 6) (at ('[data:find]' ('_Convert address _ to DEC value' address) _listCountAddress) _listCountData))
+}
+
+to 'S16 I2C | Address _ Get value' address {
+  return (at 6 (at ('[data:find]' ('_Convert address _ to DEC value' address) _listCountAddress) _listCountData))
+}
+
+to 'S16 I2C | Address _ Get value from sensor _' address index {
+  return (((at 6 (at ('[data:find]' ('_Convert address _ to DEC value' address) _listCountAddress) _listCountData)) >> (index - 1)) & 1)
+}
+
+to 'S16 I2C | Address _ Set Black' address {
+  atPut ('[data:find]' ('_Convert address _ to DEC value' address) _listCountAddress) _listCountMode 1
+}
+
+to 'S16 I2C | Address _ Set White' address {
+  atPut ('[data:find]' ('_Convert address _ to DEC value' address) _listCountAddress) _listCountMode 0
+}
+
+to 'S16 I2C | Inittialize address _ with _ sensors' address sensorCount {
+  if (_listCountAddress == 0) {
+    _listCountAddress = ('[data:makeList]')
+    _listCountData = ('[data:makeList]')
+    _listCountMode = ('[data:makeList]')
+    sendBroadcast '_getDataOverI2C'
+  }
+  local 'cAddress' ('_Convert address _ to DEC value' address)
+  if (cAddress >= 127) {
+    return 0
+  }
+  local 'locateAddress' ('[data:find]' cAddress _listCountAddress)
+  if (locateAddress < 0) {
+    '[data:addLast]' cAddress _listCountAddress
+    '[data:addLast]' ('[data:makeList]') _listCountData
+    '[data:addLast]' 1 _listCountMode
+    sayIt 'Initialize successful'
+  } else {
+    sayIt 'Address already exists'
+  }
+}
+
+to '_Convert address _ to DEC value' address {
+  local 'cAddress' (ifExpression (isType address 'string') (hexToInt address) address)
+  return cAddress
+}
+
+to '_DEC' decNo base padLength reversed {
+  local '_answer' ('[data:makeList]')
+  local '_output' ''
+  repeatUntil (decNo < base) {
+    '[data:addLast]' (decNo - ((decNo / base) * base)) _answer
+    decNo = (decNo / base)
+  }
+  '[data:addLast]' decNo _answer
+  repeatUntil ((size _answer) == 0) {
+    if ((at 'last' _answer) == 0) {
+      _output = ('[data:join]' _output '0')
+    } else {
+      _output = ('[data:join]' _output (at (at 'last' _answer) '123456789ABCDEFGHIJKLMNOPQRSTUV'))
+    }
+    '[data:delete]' 'last' _answer
+  }
+  if (and (padLength > 0) ((size _output) < padLength)) {
+    _output = ('[data:join]' ('[data:copyFromTo]' '0000000000000000' 1 (padLength - (size _output))) _output)
+  }
+  if reversed {
+    _answer = ('[data:split]' _output '')
+    _output = ('[data:makeList]')
+    repeat (size _answer) {
+      '[data:addLast]' (at 'last' _answer) _output
+      '[data:delete]' 'last' _answer
+    }
+    _output = ('[data:join]' '' ('[data:joinStrings]' _output))
+  }
+  return _output
+}
+
+to '_getDataOverI2C' {
+  forever {
+    for i (size _listCountAddress) {
+      local 'var' (newList 11)
+      waitMillis 10
+      '[sensors:i2cRead]' (at i _listCountAddress) var
+      atPut i _listCountData var
+      if ((at i _listCountMode) < 1) {
+        atPut 6 (at i _listCountData) (((at 6 var) ^ 31) & 31)
+      }
+    }
+  }
+}
+
