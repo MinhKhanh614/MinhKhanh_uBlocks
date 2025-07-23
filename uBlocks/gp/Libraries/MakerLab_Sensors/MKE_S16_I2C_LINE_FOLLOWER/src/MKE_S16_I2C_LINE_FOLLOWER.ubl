@@ -1,12 +1,14 @@
 module MKE_S16_I2C_LINE_FOLLOWER
 author MinhKhanh210
 version 1 0 
+variables _listCountAddress _listCountData _listCountMode
 description 'S16 MakerLab sensor library'
 
   spec ' ' 'S16 I2C | Inittialize address _ with _ sensors' 'S16 I2C | Inittialize address _ with _ sensors' 'auto num' '2A' 5
   space
   spec ' ' 'S16 I2C | Address _ Set Black' 'S16 I2C | Address _ Set Black' 'auto' '2A'
   spec ' ' 'S16 I2C | Address _ Set White' 'S16 I2C | Address _ Set White' 'auto' '2A'
+  spec ' ' 'S16 I2C | Set this driver address to _' 'S16 I2C | Set this sensor address to _' 'auto' '2B'
   space
   spec 'r' 'S16 I2C | Address _ Get value' 'S16 I2C | Address _ Get value' 'auto' '2A'
   spec 'r' 'S16 I2C | Address _ Get value from sensor _' 'S16 I2C | Address _ Get value of sensor _' 'auto num' '2A' 1
@@ -60,6 +62,34 @@ to 'S16 I2C | Inittialize address _ with _ sensors' address sensorCount {
     sayIt 'Initialize successful'
   } else {
     sayIt 'Address already exists'
+  }
+}
+
+to 'S16 I2C | Set this driver address to _' address {
+  local 'cAddress' ('_Convert address _ to DEC value' address)
+  if (cAddress >= 127) {
+    return 0
+  }
+  local 'addresses' 0
+  local 'getAddress' 0
+  local 'locateAddress' 0
+  for i (size _listCountAddress) {
+    if ('[sensors:i2cExists]' i) {
+      addresses += 1
+      getAddress = (at i _listCountAddress)
+      locateAddress = ('[data:find]' getAddress _listCountAddress)
+    }
+  }
+  if (addresses > 1) {
+    return 0
+  } else {
+    waitMillis 5
+    '[sensors:i2cWrite]' getAddress ('[data:makeList]' 1 0 0 cAddress)
+    waitMillis 100
+    if ('[sensors:i2cExists]' cAddress) {
+      sayIt 'Success!' 'Use address' cAddress 'to get data'
+      atPut locateAddress _listCountAddress cAddress
+    }
   }
 }
 
