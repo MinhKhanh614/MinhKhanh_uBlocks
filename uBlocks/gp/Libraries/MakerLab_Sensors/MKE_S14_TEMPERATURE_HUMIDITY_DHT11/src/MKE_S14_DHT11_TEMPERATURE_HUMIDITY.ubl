@@ -1,4 +1,4 @@
-module 'S14_DHT11' Control
+module S14_DHT11 Control
 author 'Gia An'
 version 1 0 
 tags sensor dht11 temperature humidity 
@@ -6,8 +6,9 @@ description 'Support for the DHT11environmental sensors. These sensors provide t
 '
 variables _dht_temperature _dht_humidity _dhtData _dhtLastReadTime 
 
-  spec 'r' 'temperature_DHT11' 'S14 Temp&Humi | Read temperature in Celcius from port _' 'auto' 13
-  spec 'r' 'humidity_DHT11' 'S14 Temp&Humi | Read air humidity (%) from port _' 'auto' 13
+  spec 'r' 'temperature_DHT11' 'S14 DHT11 | Read temperature in Celcius from port _' 'auto' 13
+  spec 'r' 'humidity_DHT11' 'S14 DHT11 | Read air humidity (%) from port _' 'auto' 13
+advanced
   spec ' ' '_dhtReadData' '_dhtReadData pin _' 'auto any' 4
   spec 'r' '_dhtChecksumOkay' '_dhtChecksumOkay' 'any'
   spec ' ' '_dhtUpdate' '_dhtUpdate _ isDHT11 _' 'auto bool any' 4 true

@@ -3,7 +3,7 @@ author unknown
 version 1 0 
 description ''
 
-script 40 99 {
+script 50 99 {
 whenStarted
 forever {
   sayIt ('distance (cm)' 18 19)
@@ -18,7 +18,7 @@ tags sensor s01_ultrasonic distance
 description 'Support for the S01_Ultrasonic distance sensor.'
 variables _sr04_last 
 
-  spec 'r' 'distance (cm)' 'S01 Ultrasonic Distance | Read distance (cm) trigger _ echo _ from port (D3 + D2)' 'num num' 18 19
+  spec 'r' 'distance (cm)' 'S01 Ultrasonic | Read distance (cm) from trigger pin _ echo  pin _' 'num num' 18 19
 
 to 'distance (cm)' trig ech {
   comment 'Contributed by Joan Guillén and Josep Ferràndiz'
