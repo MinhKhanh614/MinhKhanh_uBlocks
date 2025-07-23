@@ -1,3 +1,18 @@
+module main
+author unknown
+version 1 0 
+description ''
+
+script 54 54 {
+whenStarted
+forever {
+  LCD1602_write ('[data:join]' 'Values: ' (analogReadOp 3) ' ') 1
+  sayIt ('[data:join]' 'Values: ' (analogReadOp 3) ' ')
+  waitMillis 200
+}
+}
+
+
 module MKE_M07_M08_I2C_LCD
 author MinhKhanh210
 version 1 2 
@@ -14,7 +29,6 @@ variables _LCD1602_ADDR _LCD1602_LINE1 _LCD1602_LINE2 _LCD1602_LOCK_MSECS _LCD20
   spec 'r' 'LCD1602_isConnected' 'is LCD connected?'
   spec ' ' 're-initialize' 're-initialize'
   space
-advanced
   spec 'r' '_LCD1602 init' '_LCD1602 init'
   spec ' ' '_LCD1602 send' '_LCD1602 send byte _ mode _' 'num num' 10 1
   spec ' ' '_LCD1602 toggle enable' '_LCD1602 toggle enable _' 'num' 10

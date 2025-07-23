@@ -1,3 +1,18 @@
+module main
+author unknown
+version 1 0 
+description ''
+
+script 54 54 {
+whenStarted
+forever {
+  LCD1602_write ('[data:join]' 'Distance: ' ('distance (cm)' 12 13) ' (cm) ') 1
+  sayIt ('[data:join]' 'Distance: ' ('distance (cm)' 12 13) ' (cm) ')
+  waitMillis 200
+}
+}
+
+
 module MKE_M07_M08_I2C_LCD
 author MinhKhanh210
 version 1 2 
@@ -14,7 +29,6 @@ variables _LCD1602_ADDR _LCD1602_LINE1 _LCD1602_LINE2 _LCD1602_LOCK_MSECS _LCD20
   spec 'r' 'LCD1602_isConnected' 'is LCD connected?'
   spec ' ' 're-initialize' 're-initialize'
   space
-advanced
   spec 'r' '_LCD1602 init' '_LCD1602 init'
   spec ' ' '_LCD1602 send' '_LCD1602 send byte _ mode _' 'num num' 10 1
   spec ' ' '_LCD1602 toggle enable' '_LCD1602 toggle enable _' 'num' 10
@@ -164,3 +178,53 @@ to 're-initialize' {
   _LCD1602_ADDR = 0
 }
 
+
+module S01_Ultrasonic Input
+author 'Gia An'
+version 1 0 
+tags sensor s01_ultrasonic distance 
+description 'Support for the S01_Ultrasonic distance sensor.'
+variables _sr04_last 
+
+  spec 'r' 'distance (cm)' 'S01 Ultrasonic | Read distance (cm) from trigger pin _ echo  pin _' 'num num' 12 13
+
+to 'distance (cm)' trig ech {
+  comment 'Contributed by Joan Guillén and Josep Ferràndiz'
+  digitalWriteOp trig false
+  waitMicros 2
+  digitalWriteOp trig true
+  waitMicros 50
+  digitalWriteOp trig false
+  local 'start' (microsOp)
+  waitUntil (or (not (digitalReadOp ech)) (((microsOp) - start) > 23320))
+  waitUntil (or (digitalReadOp ech) (((microsOp) - start) > 23320))
+  if (((microsOp) - start) > 23320) {
+    comment 'Distance sensor not ready; return the last distance reading'
+    return _sr04_last
+  }
+  comment 'Pulse sent. Measure time until echo is detected.'
+  start = (microsOp)
+  waitUntil (or (not (digitalReadOp ech)) (((microsOp) - start) > 23320))
+  _sr04_last = ((10 * ((microsOp) - start)) / 583)
+  comment 'Leave some time for reverberations to die away.'
+  waitMillis 10
+  return _sr04_last
+}
+
+
+module 'Sensor Primitives' Input
+author MicroBlocks
+version 1 1 
+tags tilt acceleration light sensor capacitive button 
+description 'Provides blocks to read tilt in the three axes, acceleration, temperature and light level. Many boards come with this particular set of sensors, such as the micro:bit, the Circuit Playground Express, the Calliope or the Citilab ED1.'
+
+  spec 'r' '[sensors:tiltX]' 'tilt x'
+  spec 'r' '[sensors:tiltY]' 'tilt y'
+  spec 'r' '[sensors:tiltZ]' 'tilt z'
+  spec 'r' '[display:lightLevel]' 'light level'
+  spec 'r' '[sensors:temperature]' 'temperature (°C)'
+  space
+  spec 'r' '[sensors:touchRead]' 'capacitive sensor _' 'num' 1
+  space
+  spec ' ' '[sensors:i2cSetClockSpeed]' 'set i2c clock speed _' 'num' 400000
+  spec ' ' '[sensors:i2cSetPins]' 'set i2c pins SDA _ SCL _' 'num num' 4 5
