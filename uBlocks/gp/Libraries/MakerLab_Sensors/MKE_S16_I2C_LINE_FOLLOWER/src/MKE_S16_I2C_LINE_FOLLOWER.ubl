@@ -1,8 +1,8 @@
 module MKE_S16_I2C_LINE_FOLLOWER
 author MinhKhanh210
 version 1 0 
-variables _listCountAddress _listCountData _listCountMode
 description 'S16 MakerLab sensor library'
+variables _listCountAddress _listCountData _listCountMode 
 
   spec ' ' 'S16 I2C | Inittialize address _ with _ sensors' 'S16 I2C | Inittialize address _ with _ sensors' 'auto num' '2A' 5
   space
@@ -74,7 +74,7 @@ to 'S16 I2C | Set this driver address to _' address {
   local 'getAddress' 0
   local 'locateAddress' 0
   for i (size _listCountAddress) {
-    if ('[sensors:i2cExists]' i) {
+    if ('[sensors:i2cExists]' (at i _listCountAddress)) {
       addresses += 1
       getAddress = (at i _listCountAddress)
       locateAddress = ('[data:find]' getAddress _listCountAddress)
@@ -87,7 +87,7 @@ to 'S16 I2C | Set this driver address to _' address {
     '[sensors:i2cWrite]' getAddress ('[data:makeList]' 1 0 0 cAddress)
     waitMillis 100
     if ('[sensors:i2cExists]' cAddress) {
-      sayIt 'Success!' 'Use address' cAddress 'to get data'
+      sayIt 'Success!' 'Use address' cAddress 'or' ('_DEC' cAddress 16 2 false) 'to get data'
       atPut locateAddress _listCountAddress cAddress
     }
   }
