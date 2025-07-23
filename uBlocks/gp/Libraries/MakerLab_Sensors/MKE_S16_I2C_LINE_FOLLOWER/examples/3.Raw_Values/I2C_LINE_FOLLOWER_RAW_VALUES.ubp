@@ -1,3 +1,20 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables _listCountAddress 
+
+script 153 50 {
+whenStarted
+'S16 I2C | Inittialize address _ with _ sensors' '2A' 5
+waitMillis 1000
+forever {
+  sayIt ('S16 I2C | Address _ Get raw value from sensor _' '2A' 1) ('S16 I2C | Address _ Get raw value from sensor _' '2A' 2) ('S16 I2C | Address _ Get raw value from sensor _' '2A' 3) ('S16 I2C | Address _ Get raw value from sensor _' '2A' 4) ('S16 I2C | Address _ Get raw value from sensor _' '2A' 5)
+  waitMillis 50
+}
+}
+
+
 module MKE_S16_I2C_LINE_FOLLOWER
 author MinhKhanh210
 version 1 0 

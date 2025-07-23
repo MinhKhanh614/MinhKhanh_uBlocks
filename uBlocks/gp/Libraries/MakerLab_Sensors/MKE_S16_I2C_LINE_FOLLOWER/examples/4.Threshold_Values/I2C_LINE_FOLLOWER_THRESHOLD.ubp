@@ -1,3 +1,24 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables _listCountAddress 
+
+script 73 51 {
+whenStarted
+comment 'Để định ngưỡng (độ nhạy) thì nhấn giữ nút nhấn S1 trên thanh cảm biến rồi thả ra. 
+Lúc này đèn LED sẽ nhấp nháy 10 lần và giá trị ngưỡng đã được cập nhật.
+Line màu càng tối thì giá trị càng tăng, tối đa 255.
+Line màu càng sáng thì giá trị càng giảm, tối đa 0.'
+'S16 I2C | Inittialize address _ with _ sensors' '2A' 5
+waitMillis 1000
+forever {
+  sayIt ('S16 I2C | Address _ Get threshold of sensor _' '2A' 1) ('S16 I2C | Address _ Get threshold of sensor _' '2A' 2) ('S16 I2C | Address _ Get threshold of sensor _' '2A' 3) ('S16 I2C | Address _ Get threshold of sensor _' '2A' 4) ('S16 I2C | Address _ Get threshold of sensor _' '2A' 5) '' ('S16 I2C | Address _ Get raw value from sensor _' '2A' 1) ('S16 I2C | Address _ Get raw value from sensor _' '2A' 2) ('S16 I2C | Address _ Get raw value from sensor _' '2A' 3) ('S16 I2C | Address _ Get raw value from sensor _' '2A' 4) ('S16 I2C | Address _ Get raw value from sensor _' '2A' 5)
+  waitMillis 50
+}
+}
+
+
 module MKE_S16_I2C_LINE_FOLLOWER
 author MinhKhanh210
 version 1 0 

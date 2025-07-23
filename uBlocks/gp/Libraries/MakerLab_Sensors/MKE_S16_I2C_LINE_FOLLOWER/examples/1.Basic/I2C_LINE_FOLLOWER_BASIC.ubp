@@ -1,3 +1,19 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables _listCountAddress 
+
+script 167 211 {
+whenStarted
+'S16 I2C | Inittialize address _ with _ sensors' '2A' 5
+forever {
+  sayIt ('S16 I2C | Address _ Get value from sensor _' '2A' 1) ('S16 I2C | Address _ Get value from sensor _' '2A' 2) ('S16 I2C | Address _ Get value from sensor _' '2A' 3) ('S16 I2C | Address _ Get value from sensor _' '2A' 4) ('S16 I2C | Address _ Get value from sensor _' '2A' 5)
+  waitMillis 50
+}
+}
+
+
 module MKE_S16_I2C_LINE_FOLLOWER
 author MinhKhanh210
 version 1 0 
@@ -88,9 +104,7 @@ to 'S16 I2C | Set this driver address to _' address {
     waitMillis 100
     if ('[sensors:i2cExists]' cAddress) {
       sayIt 'Success!' 'Use address' cAddress 'or' ('_DEC' cAddress 16 2 false) 'to get data'
-      if (not (_listCountAddress == 0)) {
-        atPut locateAddress _listCountAddress cAddress
-      }
+      atPut locateAddress _listCountAddress cAddress
     }
   }
 }
