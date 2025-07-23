@@ -6,15 +6,17 @@ variables _listCountAddress
 
 script 113 101 {
 whenStarted
-comment 'Có thể kéo khối lệnh rồi chạy hoặc cũng có thể nhấp trực tiếp vào khối lệnh.'
+comment 'Có thể kéo khối lệnh rồi chạy hoặc cũng có thể nhấp trực tiếp vào khối lệnh.
+Lưu ý, không chạy lệnh trong vòng lặp và chỉ chạy chương trình này khi cần đổi địa chỉ I2C.
+Không gắn nhiều cảm biến có cùng địa chỉ I2C với nhau.'
 'S16 I2C | Inittialize address _ with _ sensors' '2A' 5
+waitMillis 1000
+sayIt ('[sensors:i2cExists]' (hexToInt '2A'))
 waitMillis 1000
 'S16 I2C | Set this driver address to _' '2B'
 waitMillis 1000
-forever {
-  sayIt ('_DEC' ('S16 I2C | Address _ Get value' '2B') 2 5 false)
-  waitMillis 50
-}
+sayIt ('[sensors:i2cExists]' (hexToInt '2B'))
+waitMillis 1000
 }
 
 

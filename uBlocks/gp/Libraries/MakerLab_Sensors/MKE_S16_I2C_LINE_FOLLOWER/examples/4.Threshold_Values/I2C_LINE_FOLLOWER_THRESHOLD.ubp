@@ -4,7 +4,7 @@ version 1 0
 description ''
 variables _listCountAddress 
 
-script 73 51 {
+script 73 54 {
 whenStarted
 comment 'Để định ngưỡng (độ nhạy) thì nhấn giữ nút nhấn S1 trên thanh cảm biến rồi thả ra. 
 Lúc này đèn LED sẽ nhấp nháy 10 lần và giá trị ngưỡng đã được cập nhật.

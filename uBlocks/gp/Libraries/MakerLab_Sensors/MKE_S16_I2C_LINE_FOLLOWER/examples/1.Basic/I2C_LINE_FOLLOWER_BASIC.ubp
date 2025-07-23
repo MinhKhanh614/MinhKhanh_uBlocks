@@ -4,7 +4,7 @@ version 1 0
 description ''
 variables _listCountAddress 
 
-script 167 211 {
+script 167 153 {
 whenStarted
 'S16 I2C | Inittialize address _ with _ sensors' '2A' 5
 forever {
@@ -104,7 +104,9 @@ to 'S16 I2C | Set this driver address to _' address {
     waitMillis 100
     if ('[sensors:i2cExists]' cAddress) {
       sayIt 'Success!' 'Use address' cAddress 'or' ('_DEC' cAddress 16 2 false) 'to get data'
-      atPut locateAddress _listCountAddress cAddress
+      if (not (_listCountAddress == 0)) {
+        atPut locateAddress _listCountAddress cAddress
+      }
     }
   }
 }

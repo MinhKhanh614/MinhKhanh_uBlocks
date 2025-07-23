@@ -4,7 +4,7 @@ version 1 0
 description ''
 variables _listCountAddress 
 
-script 153 50 {
+script 153 54 {
 whenStarted
 'S16 I2C | Inittialize address _ with _ sensors' '2A' 5
 waitMillis 1000

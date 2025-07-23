@@ -106,7 +106,9 @@ to 'S16 I2C | Set this driver address to _' address {
     waitMillis 100
     if ('[sensors:i2cExists]' cAddress) {
       sayIt 'Success!' 'Use address' cAddress 'or' ('_DEC' cAddress 16 2 false) 'to get data'
-      atPut locateAddress _listCountAddress cAddress
+      if (not (_listCountAddress == 0)) {
+        atPut locateAddress _listCountAddress cAddress
+      }
     }
   }
 }
