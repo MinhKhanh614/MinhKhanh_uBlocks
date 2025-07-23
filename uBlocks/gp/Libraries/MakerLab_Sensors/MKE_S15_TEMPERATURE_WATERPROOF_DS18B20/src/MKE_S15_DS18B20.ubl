@@ -4,7 +4,17 @@ version 1 0
 choices deg Celcius Fahrenheit 
 description ''
 
-  spec 'r' 'S15_WaterTemp' 'S15 WaterTemp | Read temperature in degree _ from port _' 'menu.deg auto' 'Celcius' 13
+  spec 'r' 'S15_WaterTemp' 'S15 DS18B20 | Read temperature in degree _ from port _' 'menu.deg auto' 'Celcius' 13
+advanced
+  spec ' ' '[1wire:init]' 'oneWire init pin _' 'num' 0
+  spec ' ' '[1wire:scanStart]' 'oneWire scan start'
+  spec 'r' '[1wire:scanNext]' 'oneWire scan next _' 'str' 'addressByteArray'
+  spec ' ' '[1wire:select]' 'oneWire select address _' 'str' 'addressByteArray'
+  spec ' ' '[1wire:selectAll]' 'oneWire select all'
+  spec ' ' '[1wire:writeByte]' 'oneWire write byte _ : power _' 'num bool' 0 false
+  spec 'r' '[1wire:readByte]' 'oneWire read byte'
+  spec 'r' '[1wire:crc8]' 'oneWire crc8 _ : byte count _' 'str num' 'aByteArray' 8
+  spec 'r' '[1wire:crc16]' 'oneWire crc16 _ : byte count _' 'str num' 'aByteArray' 8
 
 to S15_WaterTemp deg port {
   '[1wire:init]' port
