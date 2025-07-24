@@ -68,7 +68,6 @@ to 'Set this driver address to' _address {
       local 'receive_data' ('[data:newByteArray]' 6 0)
       '[sensors:i2cRead]' new_addr_convert receive_data
       for i (size receive_data) {
-        sayIt (at i receive_data)
         waitMillis 500
         if ((at i receive_data) == new_addr_convert) {
           sayIt 'success'
@@ -149,7 +148,6 @@ to '_pulseDegConvert' _DegIn {
 
 to '_sendI2cData _ _' data checkSumCalc {
   '[data:addLast]' checkSumCalc data
-  sayIt ('[data:asByteArray]' data) (at 1 data) (at 2 data) (at 3 data) (at 4 data) (at 5 data) (at 6 data)
   waitMicros 15
   '[sensors:i2cWrite]' (at 1 data) ('[data:asByteArray]' data)
 }

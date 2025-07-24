@@ -1,4 +1,4 @@
-module S15_Temperature
+module MKE_S15_DS18B20_TEMPERATURE
 author GiaAn
 version 1 0 
 choices deg Celcius Fahrenheit 

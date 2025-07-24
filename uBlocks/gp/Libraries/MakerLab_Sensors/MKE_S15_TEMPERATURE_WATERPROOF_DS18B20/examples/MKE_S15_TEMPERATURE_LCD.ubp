@@ -8,7 +8,8 @@ whenStarted
 forever {
   LCD1602_write ('[data:join]' 'Celcius: ' ('[data:convertType]' (S15_WaterTemp 'Celcius' 3) 'string') ' ') 1
   LCD1602_write ('[data:join]' 'Fahrenheit: ' ('[data:convertType]' (S15_WaterTemp 'Fahrenheit' 3) 'string') ' ') 2
-  waitMillis 100
+  sayIt ('[data:join]' 'Celcius: ' ('[data:convertType]' (S15_WaterTemp 'Celcius' 3) 'string') ' ') ('[data:join]' 'Fahrenheit: ' ('[data:convertType]' (S15_WaterTemp 'Fahrenheit' 3) 'string') ' ')
+  waitMillis 200
 }
 }
 
@@ -181,7 +182,7 @@ to 're-initialize' {
 }
 
 
-module S15_Temperature
+module MKE_S15_DS18B20_TEMPERATURE
 author GiaAn
 version 1 0 
 choices deg Celcius Fahrenheit 

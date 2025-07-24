@@ -14,7 +14,6 @@ variables _LCD1602_ADDR _LCD1602_LINE1 _LCD1602_LINE2 _LCD1602_LOCK_MSECS _LCD20
   spec 'r' 'LCD1602_isConnected' 'is LCD connected?'
   spec ' ' 're-initialize' 're-initialize'
   space
-advanced
   spec 'r' '_LCD1602 init' '_LCD1602 init'
   spec ' ' '_LCD1602 send' '_LCD1602 send byte _ mode _' 'num num' 10 1
   spec ' ' '_LCD1602 toggle enable' '_LCD1602 toggle enable _' 'num' 10
@@ -91,6 +90,8 @@ to LCD1602_write_field string line start end {
       if (char > 127) {
         char = 32
       }
+      atPut ((start - 1) + i) bytes char
+    } else {
       atPut ((start - 1) + i) bytes char
     }
   }

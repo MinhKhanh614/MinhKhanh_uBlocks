@@ -1,12 +1,12 @@
-module 'MKE_M11_UART_MP3_PLAYER' Output
+module MKE_M11_UART_MP3_PLAYER Output
 author MinhKhanh210
 version 1 14 
 choices mp3PlayerType DFRobot 
 description ''
 variables _mp3UseChecksum _mp3Pin _mp3RxPin _mp3Status 
 
-  spec ' ' 'mp3_initialize' 'M11 MP3 Player | Initialize _ TX pin _ RX pin _' 'menu.mp3PlayerType num num' 'DFRobot' 43 44
-  spec ' ' 'mp3_setVolume' 'M11 MP3 Player | Set volume level _' 'num' 20
+  spec ' ' 'mp3_initialize' 'M11 MP3 Player | Initialize TX pin _ RX pin _' 'num num' 43 44
+  spec ' ' 'mp3_setVolume' 'M11 MP3 Player | Set volume to _ %' 'num' 20
   space
   spec ' ' 'mp3_playTrack' 'M11 MP3 Player | Play file number _' 'num' 1
   spec ' ' 'mp3_playTrackUntilDone' 'M11 MP3 Player | Play file number _ until done' 'num' 1
@@ -63,8 +63,8 @@ We do not read the actual message but wait 20 bytes worth of time.'
   return elapsed
 }
 
-to mp3_initialize type pin optionalRxPin {
-  _mp3UseChecksum = ('Octopus' != type)
+to mp3_initialize pin optionalRxPin {
+  _mp3UseChecksum = ('Octopus' != 4)
   _mp3Pin = pin
   _mp3RxPin = -1
   if ((pushArgCount) > 2) {
@@ -154,8 +154,9 @@ to mp3_resume {
   '_mp3_sendMP3Cmd' '0x0D' 0 0
 }
 
-to mp3_setVolume level {
+to mp3_setVolume percent {
+  comment 'Percent is 0-100'
   comment 'Range is 0-30'
-  '_mp3_sendMP3Cmd' '0x06' 0 level
+  '_mp3_sendMP3Cmd' '0x06' 0 ('[misc:rescale]' percent 0 100 0 30)
 }
 
