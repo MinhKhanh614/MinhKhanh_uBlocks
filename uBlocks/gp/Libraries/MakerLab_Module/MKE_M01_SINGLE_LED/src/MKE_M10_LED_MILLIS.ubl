@@ -1,0 +1,86 @@
+module MKE_M10_LED_MILLIS
+author MinhKhanh210 
+version 1 0 
+description ''
+variables _List_LED_pins _List_data_LED _List_LED_state _List_last_millis 
+
+  spec ' ' 'M01 LED | Blink on _ then off' 'M01 LED | Blink on _ then off once on pin _' 'num auto' 1000 3
+  spec ' ' 'M01 LED | Blink _ on _ off _ times on pin _' 'M01 LED | Blink on _ off _ repeats _ times on pin _' 'auto auto auto auto' 1000 1000 1 3
+  spec ' ' 'M01 LED | Blink on _ off _ repeats forever on pin _' 'M01 LED | Blink on _ off _ repeats forever on pin _' 'num num num' 1000 1000 3
+  space
+  spec ' ' 'M01 LED | Stop LED on pin _' 'M01 LED | Stop LED on pin _' 'auto' 3
+  space
+  spec 'r' 'is LED on pin _ running?' 'is LED on pin _ running?' 'auto' 3
+  space
+  spec ' ' '_loopBlinkLED' '_loopBlinkLED'
+
+to 'M01 LED | Blink _ on _ off _ times on pin _' dOn dOff repeats pin {
+  if (_List_LED_pins == 0) {
+    _List_LED_pins = ('[data:makeList]' pin)
+    _List_data_LED = ('[data:makeList]' ('[data:makeList]' dOn dOff repeats))
+    _List_LED_state = ('[data:makeList]' 0)
+    _List_last_millis = ('[data:makeList]' 0)
+    sendBroadcast '_loopBlinkLED'
+  } else {
+    local 'var' ('[data:find]' pin _List_LED_pins)
+    if (var < 0) {
+      '[data:addLast]' pin _List_LED_pins
+      '[data:addLast]' ('[data:makeList]' dOn dOff repeats) _List_data_LED
+      '[data:addLast]' 0 _List_LED_state
+      '[data:addLast]' 0 _List_last_millis
+    } else {
+      atPut var _List_data_LED ('[data:makeList]' dOn dOff repeats)
+      atPut var _List_LED_state 0
+    }
+  }
+}
+
+to 'M01 LED | Blink on _ off _ repeats forever on pin _' dOn dOff pin {
+  'M01 LED | Blink _ on _ off _ times on pin _' dOn dOff -1 pin
+}
+
+to 'M01 LED | Blink on _ then off' dOn pin {
+  'M01 LED | Blink _ on _ off _ times on pin _' dOn 1000 1 pin
+}
+
+to 'M01 LED | Stop LED on pin _' pin {
+  'M01 LED | Blink _ on _ off _ times on pin _' 0 0 0 pin
+}
+
+to '_loopBlinkLED' {
+  forever {
+    for i (size _List_LED_pins) {
+      if ((at i _List_LED_state) == 0) {
+        if ((millisSince (at i _List_last_millis)) >= (at 1 (at i _List_data_LED))) {
+          atPut i _List_last_millis (millisOp)
+          digitalWriteOp (at i _List_LED_pins) true
+          atPut i _List_LED_state 1
+        }
+      } ((at i _List_LED_state) == 1) {
+        if ((millisSince (at i _List_last_millis)) >= (at 2 (at i _List_data_LED))) {
+          atPut i _List_last_millis (millisOp)
+          digitalWriteOp (at i _List_LED_pins) false
+          local 'repeatTimes' (at 3 (at i _List_data_LED))
+          if (repeatTimes > 0) {
+            repeatTimes += -1
+            atPut 3 (at i _List_data_LED) repeatTimes
+          } else {
+            atPut i _List_LED_state 0
+          }
+          if (repeatTimes == 0) {
+            atPut i _List_LED_state 2
+          } else {
+            atPut i _List_LED_state 0
+          }
+        } else {
+          if ((at i _List_LED_state) == 2) {digitalWriteOp (at i _List_LED_pins) false}
+        }
+      }
+    }
+  }
+}
+
+to 'is LED on pin _ running?' pin {
+  return (not ((at ('[data:find]' pin _List_LED_pins) _List_LED_state) == 2))
+}
+
