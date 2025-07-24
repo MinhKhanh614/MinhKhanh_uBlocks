@@ -11,14 +11,14 @@ Receiving requires an IR receiver module, such as those built into the Circuit P
 '
 variables _ir_pin _ir_pulse_times _ir_last_code _ir_last_device _ir_transmit_pin 
 
-  spec ' ' 'attachIR' 'M14 IR | Attach IR receiver to pin _' 'num' 0
-  spec 'r' 'ir_code_received' 'M14 IR | Code received?'
-  spec 'r' 'ir_last_code' 'M14 IR | Code'
+  spec ' ' 'attachIR' 'M14 IR | Attach IR receiver to pin _' 'num' 3
   space
+  spec 'r' 'ir_code_received' 'M14 IR | Code received?'
+  spec 'r' 'receiveIR' 'M14 IR | Receive IR code'
+  spec 'r' 'ir_last_code' 'M14 IR | Code'
+advanced
   spec ' ' 'IR_Transmit' 'M14 IR | Transmit device _ command _' 'num num' 48896 1
   spec ' ' 'attachIRTransmitter' 'M14 IR | Attach IR transmitter to pin _' 'num' 0
-  space
-  spec 'r' 'receiveIR' 'M14 IR | Receive IR code'
   space
   spec ' ' '_testIR' '_test IR'
   spec 'r' '_receiveIRFromDevice' '_receive IR code from device _' 'num' 48896
