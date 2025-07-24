@@ -5,8 +5,9 @@ description ''
 
 script 54 54 {
 whenStarted
+LCD1602_write 'Test S01' 1
 forever {
-  LCD1602_write ('[data:join]' 'Distance: ' ('distance (cm)' 12 13) ' (cm) ') 1
+  LCD1602_write ('[data:join]' 'Distance: ' ('distance (cm)' 12 13) ' cm ') 2
   sayIt ('[data:join]' 'Distance: ' ('distance (cm)' 12 13) ' (cm) ')
   waitMillis 200
 }
@@ -105,6 +106,8 @@ to LCD1602_write_field string line start end {
       if (char > 127) {
         char = 32
       }
+      atPut ((start - 1) + i) bytes char
+    } else {
       atPut ((start - 1) + i) bytes char
     }
   }

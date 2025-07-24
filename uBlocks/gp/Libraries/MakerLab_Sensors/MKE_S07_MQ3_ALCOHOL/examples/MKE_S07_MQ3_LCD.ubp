@@ -3,10 +3,11 @@ author unknown
 version 1 0 
 description ''
 
-script 54 54 {
+script 50 50 {
 whenStarted
+LCD1602_write 'Test S07' 1
 forever {
-  LCD1602_write ('[data:join]' 'Values: ' (analogReadOp 3) ' ') 1
+  LCD1602_write ('[data:join]' 'Values: ' (analogReadOp 3) ' ') 2
   sayIt ('[data:join]' 'Values: ' (analogReadOp 3) ' ')
   waitMillis 200
 }

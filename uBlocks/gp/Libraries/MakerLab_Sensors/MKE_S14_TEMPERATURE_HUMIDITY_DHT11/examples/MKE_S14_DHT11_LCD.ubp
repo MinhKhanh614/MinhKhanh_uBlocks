@@ -3,7 +3,7 @@ author unknown
 version 1 0 
 description ''
 
-script 50 50 {
+script 54 54 {
 whenStarted
 forever {
   sayIt (temperature_DHT11 3)
@@ -12,11 +12,11 @@ forever {
 }
 }
 
-script 54 369 {
+script 58 373 {
 whenStarted
 forever {
   sayIt (humidity_DHT11 3)
-  LCD1602_write ('[data:join]' 'Hummidity' (humidity_DHT11 3) '%') 2
+  LCD1602_write ('[data:join]' 'Hummidity: ' (humidity_DHT11 3) ' %') 2
   waitMillis 200
 }
 }
@@ -95,7 +95,6 @@ to LCD1602_write_field string line start end {
     end = 20
   }
   string = ('[data:join]' '' string)
-  sayIt string (size string)
   if (line == 1) {
     bytes = _LCD1602_LINE1
   } (line == 2) {
@@ -108,7 +107,6 @@ to LCD1602_write_field string line start end {
   waitUntil (((millisOp) - _LCD1602_LOCK_MSECS) > 500)
   _LCD1602_LOCK_MSECS = (millisOp)
   local 'count' ((end - start) + 1)
-  sayIt bytes (size bytes)
   for i count {
     local 'char' 32
     if (i <= (size string)) {
@@ -116,6 +114,8 @@ to LCD1602_write_field string line start end {
       if (char > 127) {
         char = 32
       }
+      atPut ((start - 1) + i) bytes char
+    } else {
       atPut ((start - 1) + i) bytes char
     }
   }
