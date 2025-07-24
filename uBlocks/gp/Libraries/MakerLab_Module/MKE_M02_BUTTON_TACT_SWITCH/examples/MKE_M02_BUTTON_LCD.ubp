@@ -1,0 +1,375 @@
+module main
+author MinhKhanh210
+version 1 0 
+description ''
+
+script 50 50 {
+whenStarted
+LCD1602_clear
+forever {
+  if ('is Button port' '3' 'Clicked') {
+    sayIt 'Clicked'
+    LCD1602_write 'Clicked' 1
+  } ('is Button port' '3' 'Double-Clicked') {
+    sayIt 'Double-Clicked'
+    LCD1602_write 'Double-Clicked' 1
+  } else {
+    if ('is Button port' '3' 'Long-Clicked') {
+      sayIt 'Long-Clicked'
+      LCD1602_write 'Long-Clicked' 1
+    }
+  }
+  waitMillis 1000
+}
+}
+
+
+module MKE_M02_BUTTON_TACT_SWITCH
+author MinhKhanh210
+version 1 3 
+choices pinListButton D9 D11 D12 D13 A1 A2 A3 
+choices buttonState Clicked 'Double-Clicked' 'Long-Clicked' 
+description ''
+variables _buttonPinList _debounceDelayList _longPressTimeList _buttonClickStateList _buttonPressedList _pressStartTimeList _lastDebounceTimeList _lastClickTimeList _clickCountList _buttonLastStateList 
+
+  spec ' ' 'Set Button port' 'Set Button port _ longPressTime (ms) _' 'str.pinListButton num' 'D9' 1000
+  spec ' ' 'Set button port' 'Set Button port _ debounceDelayTime (ms) _' 'str.pinListButton num' 'D9' 50
+  spec 'r' '_checkPortToPin' '_checkPortToPin _' 'auto' 'D9'
+  spec ' ' '_updateButtonLoop' '_updateButtonLoop'
+  spec 'r' 'is Button port' 'is Button port _ _ ?' 'str.pinListButton str.buttonState' 'D9' 'Clicked'
+
+to 'Set Button port' _pinLabel _longPressTime {
+  local 'tempPin' ('_checkPortToPin' _pinLabel)
+  local 'pinLocation' ('[data:find]' tempPin _buttonPinList)
+  if (pinLocation < 0) {
+    return 0
+  } else {
+    if (_longPressTimeList != 0) {atPut pinLocation _longPressTimeList _longPressTime}
+  }
+}
+
+to 'Set button port' _pinLabel _debounceDelay {
+  local 'tempPin' ('_checkPortToPin' _pinLabel)
+  local 'pinLocation' ('[data:find]' tempPin _buttonPinList)
+  if (pinLocation < 0) {
+    return 0
+  } else {
+    if (_debounceDelayList != 0) {atPut pinLocation _debounceDelayList _debounceDelay}
+  }
+}
+
+to '_checkPortToPin' _pinLabel {
+  if (_pinLabel == ('[data:toString]' 'D9')) {
+    return 3
+  } (_pinLabel == ('[data:toString]' 'D11')) {
+    return 23
+  } (_pinLabel == ('[data:toString]' 'D12')) {
+    return 19
+  } (_pinLabel == ('[data:toString]' 'D13')) {
+    return 18
+  } (_pinLabel == ('[data:toString]' 'A1')) {
+    return 34
+  } (_pinLabel == ('[data:toString]' 'A2')) {
+    return 33
+  } (_pinLabel == ('[data:toString]' 'A3')) {
+    return 32
+  } else {
+    return ('[data:convertType]' _pinLabel 'number')
+  }
+}
+
+to '_updateButtonLoop' {
+  if (_buttonPinList != 0) {forever {
+    for i (size _buttonPinList) {
+      local 'pin' (at i _buttonPinList)
+      local '_debounceDelay[]' (at i _debounceDelayList)
+      local '_longPressTime[]' (at i _longPressTimeList)
+      local '_buttonState' (at i _buttonLastStateList)
+      local '_buttonPressed' (at i _buttonPressedList)
+      local '_pressStartTime' (at i _pressStartTimeList)
+      local '_lastDebounceTime' (at i _lastDebounceTimeList)
+      local '_lastClickTime' (at i _lastClickTimeList)
+      local '_clickCount' (at i _clickCountList)
+      local 'reading' (digitalReadOp pin)
+      if (reading != _buttonState) {
+        _lastDebounceTime = (millisOp)
+        atPut i _lastDebounceTimeList _lastDebounceTime
+      }
+      if (((millisOp) - _lastDebounceTime) > _debounceDelay[]) {
+        if (reading != _buttonPressed) {
+          _buttonPressed = reading
+          atPut i _buttonPressedList _buttonPressed
+          if (_buttonPressed == (booleanConstant false)) {
+            _pressStartTime = (millisOp)
+            atPut i _pressStartTimeList _pressStartTime
+          } else {
+            local 'pressDuration' ((millisOp) - _pressStartTime)
+            if (pressDuration > _longPressTime[]) {
+              _buttonPressed = reading
+              atPut i _buttonPressedList _buttonPressed
+              local 'prevState' (at i _buttonClickStateList)
+              if (prevState != ('[data:toString]' 'Long-Clicked')) {
+                atPut i _buttonClickStateList ('[data:toString]' 'Long-Clicked')
+              }
+              _clickCount = 0
+              atPut i _clickCountList _clickCount
+            } else {
+              if (((millisOp) - _lastClickTime) < 400) {
+                _clickCount = (_clickCount + 1)
+              } else {
+                _clickCount = 1
+              }
+              _lastClickTime = (millisOp)
+              atPut i _lastClickTimeList _lastClickTime
+              atPut i _clickCountList _clickCount
+              if (_clickCount == 2) {
+                atPut i _buttonClickStateList ('[data:toString]' 'Double-Clicked')
+                _clickCount = 0
+                atPut i _clickCountList _clickCount
+              } else {
+                local 'prevState' (at i _buttonClickStateList)
+                if (prevState != ('[data:toString]' 'Clicked')) {
+                  atPut i _buttonClickStateList ('[data:toString]' 'Clicked')
+                }
+              }
+            }
+          }
+        }
+      }
+      _buttonState = reading
+      atPut i _buttonLastStateList _buttonState
+    }
+    waitMillis 15
+  }
+}
+}
+
+to 'is Button port' _pinLabel _stateLabel {
+  if (_buttonPinList == 0) {
+    _buttonPinList = ('[data:makeList]')
+    _debounceDelayList = ('[data:makeList]')
+    _longPressTimeList = ('[data:makeList]')
+    _buttonClickStateList = ('[data:makeList]')
+    _buttonPressedList = ('[data:makeList]')
+    _pressStartTimeList = ('[data:makeList]')
+    _lastDebounceTimeList = ('[data:makeList]')
+    _lastClickTimeList = ('[data:makeList]')
+    _clickCountList = ('[data:makeList]')
+    _buttonLastStateList = ('[data:makeList]')
+    sendBroadcast '_updateButtonLoop'
+  }
+  local 'tempPin' ('_checkPortToPin' _pinLabel)
+  local 'pinLocation' ('[data:find]' tempPin _buttonPinList)
+  if (pinLocation < 0) {
+    comment 'Nếu không có trong danh sách sẽ trả về -1'
+    comment 'Thêm vào danh sách'
+    if (tempPin != -1) {
+      local 'now' (millisOp)
+      local 'initReading' (digitalReadOp tempPin)
+      '[data:addLast]' tempPin _buttonPinList
+      '[data:addLast]' 50 _debounceDelayList
+      '[data:addLast]' 1000 _longPressTimeList
+      '[data:addLast]' ('[data:toString]' 'Not-Clicked') _buttonClickStateList
+      '[data:addLast]' initReading _buttonPressedList
+      '[data:addLast]' now _pressStartTimeList
+      '[data:addLast]' now _lastDebounceTimeList
+      '[data:addLast]' now _lastClickTimeList
+      '[data:addLast]' 0 _clickCountList
+      '[data:addLast]' initReading _buttonLastStateList
+      pinLocation = (size _buttonPinList)
+    }
+  }
+  local '_getButtonState' (at pinLocation _buttonClickStateList)
+  if (_getButtonState == _stateLabel) {
+    atPut pinLocation _buttonClickStateList ('[data:toString]' 'Not-Clicked')
+    return (booleanConstant true)
+  } else {
+    return (booleanConstant false)
+  }
+}
+
+
+module MKE_M07_M08_I2C_LCD
+author MinhKhanh210
+version 1 2 
+depends sensorPrims 
+description ''
+variables _LCD1602_ADDR _LCD1602_LINE1 _LCD1602_LINE2 _LCD1602_LOCK_MSECS _LCD2004_LINE3 _LCD2004_LINE4 
+
+  spec ' ' 'LCD1602_write' 'LCD I2C | Print _ at Row _' 'str num' 'MakerEDU' 1
+  spec ' ' 'LCD1602_write_field' 'LCD I2C | Print _ at Row _ and Columm _ to Columm _' 'str num num num' 'labVN' 1 6 10
+  spec ' ' 'LCD_write_at_r_and_c' 'LCD I2C | Print _ at Columm _ and Row _' 'auto num num' 'MakerlabVN' 1 1
+  space
+  spec ' ' 'LCD1602_clear' 'LCD I2C | Clear all'
+  space
+  spec 'r' 'LCD1602_isConnected' 'is LCD connected?'
+  spec ' ' 're-initialize' 're-initialize'
+  space
+  spec 'r' '_LCD1602 init' '_LCD1602 init'
+  spec ' ' '_LCD1602 send' '_LCD1602 send byte _ mode _' 'num num' 10 1
+  spec ' ' '_LCD1602 toggle enable' '_LCD1602 toggle enable _' 'num' 10
+  spec ' ' 'LCD1602_write_buffer' '_write_buffer _' 'auto' 0
+
+to LCD1602_clear {
+  if (not ('_LCD1602 init')) {return}
+  waitUntil (((millisOp) - _LCD1602_LOCK_MSECS) > 500)
+  _LCD1602_LOCK_MSECS = (millisOp)
+  _LCD1602_LINE1 = ('[data:newByteArray]' 20 32)
+  _LCD1602_LINE2 = ('[data:newByteArray]' 20 32)
+  _LCD2004_LINE3 = ('[data:newByteArray]' 20 32)
+  _LCD2004_LINE4 = ('[data:newByteArray]' 20 32)
+  '_LCD1602 send' 1 0
+  _LCD1602_LOCK_MSECS = 0
+}
+
+to LCD1602_isConnected {
+  return ('_LCD1602 init')
+}
+
+to LCD1602_write string line {
+  LCD1602_write_field string line 1 20
+}
+
+to LCD1602_write_buffer line {
+  local 'bytes' 0
+  if (line == 1) {
+    '_LCD1602 send' (hexToInt '80') 0
+    bytes = _LCD1602_LINE1
+  } (line == 2) {
+    '_LCD1602 send' (hexToInt 'C0') 0
+    bytes = _LCD1602_LINE2
+  } (line == 3) {
+    '_LCD1602 send' (hexToInt '94') 0
+    bytes = _LCD2004_LINE3
+  } else {
+    if (line == 4) {
+      '_LCD1602 send' (hexToInt 'D4') 0
+      bytes = _LCD2004_LINE4
+    }
+  }
+  for b bytes {
+    '_LCD1602 send' b 1
+  }
+}
+
+to LCD1602_write_field string line start end {
+  if (not ('_LCD1602 init')) {return}
+  if (start < 1) {
+    sayIt 'first columm must start with 1'
+    return
+  }
+  if (end > 20) {
+    end = 20
+  }
+  string = ('[data:join]' '' string)
+  if (line == 1) {
+    bytes = _LCD1602_LINE1
+  } (line == 2) {
+    bytes = _LCD1602_LINE2
+  } (line == 3) {
+    bytes = _LCD2004_LINE3
+  } else {
+    if (line == 4) {bytes = _LCD2004_LINE4}
+  }
+  waitUntil (((millisOp) - _LCD1602_LOCK_MSECS) > 500)
+  _LCD1602_LOCK_MSECS = (millisOp)
+  local 'count' ((end - start) + 1)
+  for i count {
+    local 'char' 32
+    if (i <= (size string)) {
+      char = ('[data:unicodeAt]' i string)
+      if (char > 127) {
+        char = 32
+      }
+      atPut ((start - 1) + i) bytes char
+    } else {
+      atPut ((start - 1) + i) bytes char
+    }
+  }
+  LCD1602_write_buffer line
+  _LCD1602_LOCK_MSECS = 0
+}
+
+to LCD_write_at_r_and_c string col row {
+  LCD1602_write_field string row col ((size string) + col)
+}
+
+to '_LCD1602 init' {
+  comment 'Return true if already initialized'
+  if (_LCD1602_ADDR != 0) {
+    return true
+  }
+  comment 'Use slow I2C speed'
+  '[sensors:i2cSetClockSpeed]' 100000
+  comment 'Try two common I2C addresses and
+use the one that gets a response'
+  _LCD1602_ADDR = (hexToInt '27')
+  if ((i2cGet _LCD1602_ADDR 0) < 0) {
+    _LCD1602_ADDR = (hexToInt '3F')
+  }
+  if ((i2cGet _LCD1602_ADDR 0) < 0) {
+    _LCD1602_ADDR = 0
+    comment 'LCD panel not found'
+    return false
+  }
+  _LCD1602_LINE1 = ('[data:newByteArray]' 20 32)
+  _LCD1602_LINE2 = ('[data:newByteArray]' 20 32)
+  _LCD2004_LINE3 = ('[data:newByteArray]' 20 32)
+  _LCD2004_LINE4 = ('[data:newByteArray]' 20 32)
+  comment 'Initialize display'
+  '_LCD1602 send' (hexToInt '33') 0
+  '_LCD1602 send' (hexToInt '32') 0
+  '_LCD1602 send' (hexToInt '06') 0
+  '_LCD1602 send' (hexToInt '0C') 0
+  '_LCD1602 send' (hexToInt '28') 0
+  '_LCD1602 send' (hexToInt '01') 0
+  '[sensors:i2cSetClockSpeed]' 400000
+  waitMillis 250
+  return true
+}
+
+to '_LCD1602 send' bits mode {
+  comment 'Use slow I2C speed'
+  '[sensors:i2cSetClockSpeed]' 100000
+  local '_LCD1602 BACKLIGHT' (hexToInt '8')
+  local 'high bits' ((mode | (bits & (hexToInt 'F0'))) | (v '_LCD1602 BACKLIGHT'))
+  local 'low bits' ((mode | ((bits << 4) & (hexToInt 'F0'))) | (v '_LCD1602 BACKLIGHT'))
+  '[sensors:i2cWrite]' _LCD1602_ADDR (v 'high bits')
+  '_LCD1602 toggle enable' (v 'high bits')
+  '[sensors:i2cWrite]' _LCD1602_ADDR (v 'low bits')
+  '_LCD1602 toggle enable' (v 'low bits')
+  comment 'Revert to fast I2C speed'
+  '[sensors:i2cSetClockSpeed]' 400000
+  waitMillis 1
+}
+
+to '_LCD1602 toggle enable' bits {
+  local '_LCD1602 ENABLE' 4
+  waitMicros 5
+  '[sensors:i2cWrite]' _LCD1602_ADDR (bits | (v '_LCD1602 ENABLE'))
+  waitMicros 5
+  '[sensors:i2cWrite]' _LCD1602_ADDR (bits & ('~' (v '_LCD1602 ENABLE')))
+  waitMicros 5
+}
+
+to 're-initialize' {
+  _LCD1602_ADDR = 0
+}
+
+
+module 'Sensor Primitives' Input
+author MicroBlocks
+version 1 1 
+tags tilt acceleration light sensor capacitive button 
+description 'Provides blocks to read tilt in the three axes, acceleration, temperature and light level. Many boards come with this particular set of sensors, such as the micro:bit, the Circuit Playground Express, the Calliope or the Citilab ED1.'
+
+  spec 'r' '[sensors:tiltX]' 'tilt x'
+  spec 'r' '[sensors:tiltY]' 'tilt y'
+  spec 'r' '[sensors:tiltZ]' 'tilt z'
+  spec 'r' '[display:lightLevel]' 'light level'
+  spec 'r' '[sensors:temperature]' 'temperature (°C)'
+  space
+  spec 'r' '[sensors:touchRead]' 'capacitive sensor _' 'num' 1
+  space
+  spec ' ' '[sensors:i2cSetClockSpeed]' 'set i2c clock speed _' 'num' 400000
+  spec ' ' '[sensors:i2cSetPins]' 'set i2c pins SDA _ SCL _' 'num num' 4 5

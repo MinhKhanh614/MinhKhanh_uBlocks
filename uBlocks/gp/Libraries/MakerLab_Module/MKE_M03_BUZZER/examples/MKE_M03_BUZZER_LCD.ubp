@@ -1,0 +1,398 @@
+module main
+author unknown
+version 1 0 
+description ''
+
+script 56 50 {
+whenStarted
+forever {
+  sayIt 'Playing note c '
+  LCD1602_write 'Playing note c ' 1
+  'M03 Buzzer | Play note' 'c' 0 500 'D9'
+  waitMillis 500
+  sayIt 'Stop playing note c '
+  LCD1602_write 'Stop playing note c ' 1
+  waitMillis 500
+}
+}
+
+script 56 821 {
+to '_toneLoop' {}
+}
+
+
+module MKE_M03_Buzzer_Module
+author MinhKhanh210
+version 1 0 
+depends Tone 
+choices KhanhTone_NoteName c 'c#' d 'd#' e f 'f#' g 'g#' a 'a#' b 
+choices KhanhPort D9 D10 D11 D12 D13 
+description ''
+
+  spec ' ' 'M03 Buzzer | Play note' 'M03 Buzzer | Play note _ tone _ for _ miliseconds from port _' 'str.KhanhTone_NoteName num num str' 'c' 0 1 'D9'
+
+to 'M03 Buzzer | Play note' note tone time port {
+  stopTone
+  'attach buzzer to pin' (ifExpression (port == ('[data:toString]' 'D9')) 13 (ifExpression (port == ('[data:toString]' 'D10')) 5 (ifExpression (port == ('[data:toString]' 'D11')) 23 (ifExpression (port == ('[data:toString]' 'D12')) 19 (ifExpression (port == ('[data:toString]' 'D13')) 18 -1)))))
+  'play tone' note tone time
+}
+
+
+module MKE_M07_M08_I2C_LCD
+author MinhKhanh210
+version 1 2 
+depends sensorPrims 
+description ''
+variables _LCD1602_ADDR _LCD1602_LINE1 _LCD1602_LINE2 _LCD1602_LOCK_MSECS _LCD2004_LINE3 _LCD2004_LINE4 
+
+  spec ' ' 'LCD1602_write' 'LCD I2C | Print _ at Row _' 'str num' 'MakerEDU' 1
+  spec ' ' 'LCD1602_write_field' 'LCD I2C | Print _ at Row _ and Columm _ to Columm _' 'str num num num' 'labVN' 1 6 10
+  spec ' ' 'LCD_write_at_r_and_c' 'LCD I2C | Print _ at Columm _ and Row _' 'auto num num' 'MakerlabVN' 1 1
+  space
+  spec ' ' 'LCD1602_clear' 'LCD I2C | Clear all'
+  space
+  spec 'r' 'LCD1602_isConnected' 'is LCD connected?'
+  spec ' ' 're-initialize' 're-initialize'
+  space
+  spec 'r' '_LCD1602 init' '_LCD1602 init'
+  spec ' ' '_LCD1602 send' '_LCD1602 send byte _ mode _' 'num num' 10 1
+  spec ' ' '_LCD1602 toggle enable' '_LCD1602 toggle enable _' 'num' 10
+  spec ' ' 'LCD1602_write_buffer' '_write_buffer _' 'auto' 0
+
+to LCD1602_clear {
+  if (not ('_LCD1602 init')) {return}
+  waitUntil (((millisOp) - _LCD1602_LOCK_MSECS) > 500)
+  _LCD1602_LOCK_MSECS = (millisOp)
+  _LCD1602_LINE1 = ('[data:newByteArray]' 20 32)
+  _LCD1602_LINE2 = ('[data:newByteArray]' 20 32)
+  _LCD2004_LINE3 = ('[data:newByteArray]' 20 32)
+  _LCD2004_LINE4 = ('[data:newByteArray]' 20 32)
+  '_LCD1602 send' 1 0
+  _LCD1602_LOCK_MSECS = 0
+}
+
+to LCD1602_isConnected {
+  return ('_LCD1602 init')
+}
+
+to LCD1602_write string line {
+  LCD1602_write_field string line 1 20
+}
+
+to LCD1602_write_buffer line {
+  local 'bytes' 0
+  if (line == 1) {
+    '_LCD1602 send' (hexToInt '80') 0
+    bytes = _LCD1602_LINE1
+  } (line == 2) {
+    '_LCD1602 send' (hexToInt 'C0') 0
+    bytes = _LCD1602_LINE2
+  } (line == 3) {
+    '_LCD1602 send' (hexToInt '94') 0
+    bytes = _LCD2004_LINE3
+  } else {
+    if (line == 4) {
+      '_LCD1602 send' (hexToInt 'D4') 0
+      bytes = _LCD2004_LINE4
+    }
+  }
+  for b bytes {
+    '_LCD1602 send' b 1
+  }
+}
+
+to LCD1602_write_field string line start end {
+  if (not ('_LCD1602 init')) {return}
+  if (start < 1) {
+    sayIt 'first columm must start with 1'
+    return
+  }
+  if (end > 20) {
+    end = 20
+  }
+  string = ('[data:join]' '' string)
+  sayIt string (size string)
+  if (line == 1) {
+    bytes = _LCD1602_LINE1
+  } (line == 2) {
+    bytes = _LCD1602_LINE2
+  } (line == 3) {
+    bytes = _LCD2004_LINE3
+  } else {
+    if (line == 4) {bytes = _LCD2004_LINE4}
+  }
+  waitUntil (((millisOp) - _LCD1602_LOCK_MSECS) > 500)
+  _LCD1602_LOCK_MSECS = (millisOp)
+  local 'count' ((end - start) + 1)
+  sayIt bytes (size bytes)
+  for i count {
+    local 'char' 32
+    if (i <= (size string)) {
+      char = ('[data:unicodeAt]' i string)
+      if (char > 127) {
+        char = 32
+      }
+      atPut ((start - 1) + i) bytes char
+    }
+  }
+  LCD1602_write_buffer line
+  _LCD1602_LOCK_MSECS = 0
+}
+
+to LCD_write_at_r_and_c string col row {
+  LCD1602_write_field string row col ((size string) + col)
+}
+
+to '_LCD1602 init' {
+  comment 'Return true if already initialized'
+  if (_LCD1602_ADDR != 0) {
+    return true
+  }
+  comment 'Use slow I2C speed'
+  '[sensors:i2cSetClockSpeed]' 100000
+  comment 'Try two common I2C addresses and
+use the one that gets a response'
+  _LCD1602_ADDR = (hexToInt '27')
+  if ((i2cGet _LCD1602_ADDR 0) < 0) {
+    _LCD1602_ADDR = (hexToInt '3F')
+  }
+  if ((i2cGet _LCD1602_ADDR 0) < 0) {
+    _LCD1602_ADDR = 0
+    comment 'LCD panel not found'
+    return false
+  }
+  _LCD1602_LINE1 = ('[data:newByteArray]' 20 32)
+  _LCD1602_LINE2 = ('[data:newByteArray]' 20 32)
+  _LCD2004_LINE3 = ('[data:newByteArray]' 20 32)
+  _LCD2004_LINE4 = ('[data:newByteArray]' 20 32)
+  comment 'Initialize display'
+  '_LCD1602 send' (hexToInt '33') 0
+  '_LCD1602 send' (hexToInt '32') 0
+  '_LCD1602 send' (hexToInt '06') 0
+  '_LCD1602 send' (hexToInt '0C') 0
+  '_LCD1602 send' (hexToInt '28') 0
+  '_LCD1602 send' (hexToInt '01') 0
+  '[sensors:i2cSetClockSpeed]' 400000
+  waitMillis 250
+  return true
+}
+
+to '_LCD1602 send' bits mode {
+  comment 'Use slow I2C speed'
+  '[sensors:i2cSetClockSpeed]' 100000
+  local '_LCD1602 BACKLIGHT' (hexToInt '8')
+  local 'high bits' ((mode | (bits & (hexToInt 'F0'))) | (v '_LCD1602 BACKLIGHT'))
+  local 'low bits' ((mode | ((bits << 4) & (hexToInt 'F0'))) | (v '_LCD1602 BACKLIGHT'))
+  '[sensors:i2cWrite]' _LCD1602_ADDR (v 'high bits')
+  '_LCD1602 toggle enable' (v 'high bits')
+  '[sensors:i2cWrite]' _LCD1602_ADDR (v 'low bits')
+  '_LCD1602 toggle enable' (v 'low bits')
+  comment 'Revert to fast I2C speed'
+  '[sensors:i2cSetClockSpeed]' 400000
+  waitMillis 1
+}
+
+to '_LCD1602 toggle enable' bits {
+  local '_LCD1602 ENABLE' 4
+  waitMicros 5
+  '[sensors:i2cWrite]' _LCD1602_ADDR (bits | (v '_LCD1602 ENABLE'))
+  waitMicros 5
+  '[sensors:i2cWrite]' _LCD1602_ADDR (bits & ('~' (v '_LCD1602 ENABLE')))
+  waitMicros 5
+}
+
+to 're-initialize' {
+  _LCD1602_ADDR = 0
+}
+
+
+module 'Sensor Primitives' Input
+author MicroBlocks
+version 1 1 
+tags tilt acceleration light sensor capacitive button 
+description 'Provides blocks to read tilt in the three axes, acceleration, temperature and light level. Many boards come with this particular set of sensors, such as the micro:bit, the Circuit Playground Express, the Calliope or the Citilab ED1.'
+
+  spec 'r' '[sensors:tiltX]' 'tilt x'
+  spec 'r' '[sensors:tiltY]' 'tilt y'
+  spec 'r' '[sensors:tiltZ]' 'tilt z'
+  spec 'r' '[display:lightLevel]' 'light level'
+  spec 'r' '[sensors:temperature]' 'temperature (°C)'
+  space
+  spec 'r' '[sensors:touchRead]' 'capacitive sensor _' 'num' 1
+  space
+  spec ' ' '[sensors:i2cSetClockSpeed]' 'set i2c clock speed _' 'num' 400000
+  spec ' ' '[sensors:i2cSetPins]' 'set i2c pins SDA _ SCL _' 'num num' 4 5
+
+module Tone Output
+author MicroBlocks
+version 1 9 
+tags tone sound music audio note speaker 
+choices tone_NoteName 'nt;c' 'nt;c#' 'nt;d' 'nt;d#' 'nt;e' 'nt;f' 'nt;f#' 'nt;g' 'nt;g#' 'nt;a' 'nt;a#' 'nt;b' 
+description 'Audio tone generation. Make music with MicroBlocks!
+'
+variables _tonePin _toneInitalized _toneLoopOverhead _toneNoteNames _toneArezzoNotes _toneFrequencies 
+
+  spec ' ' 'play tone' 'play note _ octave _ for _ ms' 'str.tone_NoteName num num' 'nt;c' 0 500
+  spec ' ' 'playMIDIKey' 'play midi key _ for _ ms' 'num num' 60 500
+  spec ' ' 'play frequency' 'play frequency _ for _ ms' 'num num' 261 500
+  space
+  spec ' ' 'startTone' 'start tone _ Hz' 'num' 440
+  spec ' ' 'stopTone' 'stop tone'
+  space
+  spec ' ' 'attach buzzer to pin' 'attach buzzer to pin _' 'auto' ''
+  space
+  spec 'r' '_measureLoopOverhead' '_measureLoopOverhead'
+  spec 'r' '_baseFreqForNote' '_baseFreqForNote _' 'auto' 'c'
+  spec 'r' '_baseFreqForSemitone' '_baseFreqForSemitone _' 'num' 0
+  spec ' ' '_toneLoop' '_toneLoop _ for _ ms' 'num num' 440000 100
+  spec 'r' '_trimmedLowercase' '_trimmedLowercase _' 'str' 'A. b C...'
+  spec ' ' '_tone init note names' '_tone init note names'
+
+to '_baseFreqForNote' note {
+  comment 'Return the frequency for the given note in the middle-C octave
+scaled by 1000. For example, return 440000 (440Hz) for A.
+Note names may be upper or lower case. Note names
+may be followed by # for a sharp or b for a flat.'
+  local 'normalized note' ('_trimmedLowercase' note)
+  'normalized note' = (ifExpression ((at 1 (v 'normalized note')) == 'n') (v 'normalized note') ('[data:join]' 'nt;' (v 'normalized note')))
+  '_tone init note names'
+  if (('[data:find]' (v 'normalized note') _toneArezzoNotes) > 0) {
+    return ('_baseFreqForSemitone' ('[data:find]' (v 'normalized note') _toneArezzoNotes))
+  } else {
+    return ('_baseFreqForSemitone' ('[data:find]' (v 'normalized note') _toneNoteNames))
+  }
+}
+
+to '_baseFreqForSemitone' semitone {
+  if (_toneFrequencies == 0) {_toneFrequencies = ('[data:makeList]' 261626 277183 293665 311127 329628 349228 369994 391995 415305 440000 466164 493883 246942 277183 277183 311127 311127 349228 329628 369994 369994 415305 415305 466164 466164 523252)}
+  if (and (1 <= semitone) (semitone <= (size _toneFrequencies))) {
+    return (at semitone _toneFrequencies)
+  } else {
+    comment 'Bad note name; return 10 Hz'
+    return 10000
+  }
+}
+
+to '_measureLoopOverhead' {
+  comment 'Measure the loop overhead on this device'
+  local 'halfCycle' 100
+  local 'startT' (microsOp)
+  repeat 100 {
+    digitalWriteOp _tonePin false
+    waitMicros halfCycle
+    digitalWriteOp _tonePin false
+    waitMicros halfCycle
+  }
+  local 'usecs' ((microsOp) - startT)
+  return ((usecs - 20000) / 200)
+}
+
+to '_tone init note names' {
+  if (_toneNoteNames == 0) {
+    _toneNoteNames = ('[data:makeList]' 'nt;c' 'nt;c#' 'nt;d' 'nt;d#' 'nt;e' 'nt;f' 'nt;f#' 'nt;g' 'nt;g#' 'nt;a' 'nt;a#' 'nt;b' 'nt;c_' 'nt;db' 'nt;d_' 'nt;eb' 'nt;e_' 'nt;e#' 'nt;f_' 'nt;gb' 'nt;g_' 'nt;ab' 'nt;a_' 'nt;bb' 'nt;b_' 'nt;b#')
+    _toneArezzoNotes = ('[data:makeList]' 'nt;do' 'nt;do#' 'nt;re' 'nt;re#' 'nt;mi' 'nt;fa' 'nt;fa#' 'nt;sol' 'nt;sol#' 'nt;la' 'nt;la#' 'nt;si' 'nt;do_' 'nt;dob' 'nt;re_' 'nt;reb' 'nt;mi_' 'nt;mi#' 'nt;fa_' 'nt;solb' 'nt;sol_' 'nt;lab' 'nt;la_' 'nt;sib' 'nt;si_' 'nt;si#')
+  }
+}
+
+to '_toneLoop' scaledFreq ms {
+  if (_toneInitalized == 0) {'attach buzzer to pin' ''}
+  if ('[io:hasTone]') {
+    '[io:playTone]' _tonePin (scaledFreq / 1000)
+    waitMillis ms
+    '[io:playTone]' _tonePin 0
+  } else {
+    local 'halfCycle' ((500000000 / scaledFreq) - _toneLoopOverhead)
+    local 'cycles' ((ms * 500) / halfCycle)
+    repeat cycles {
+      digitalWriteOp _tonePin true
+      waitMicros halfCycle
+      digitalWriteOp _tonePin false
+      waitMicros halfCycle
+    }
+  }
+}
+
+to '_trimmedLowercase' s {
+  comment 'Return a copy of the given string without whitespace
+or periods and all lowercase.'
+  local 'result' (newList (size s))
+  '[data:delete]' 'all' result
+  for i (size s) {
+    local 'ch' ('[data:unicodeAt]' i s)
+    if (and (ch > 32) (ch != 46)) {
+      if (and (65 <= ch) (ch <= 90)) {ch = (ch + 32)}
+      '[data:addLast]' ch result
+    }
+  }
+  return ('[data:unicodeString]' result)
+}
+
+to 'attach buzzer to pin' pinNumber {
+  if (pinNumber == '') {
+    comment 'Pin number not specified; use default pin for this device'
+    if ((boardType) == 'Citilab ED1') {
+      _tonePin = 26
+    } ((boardType) == 'M5Stack-Core') {
+      _tonePin = 25
+    } ((boardType) == 'M5StickC') {
+      _tonePin = 26
+    } ((boardType) == 'Calliope') {
+      digitalWriteOp 23 true
+      digitalWriteOp 24 true
+      _tonePin = 25
+    } ((boardType) == 'D1-Mini') {
+      _tonePin = 12
+    } else {
+      _tonePin = -1
+    }
+  } else {
+    _tonePin = pinNumber
+  }
+  _toneLoopOverhead = ('_measureLoopOverhead')
+  _toneInitalized = (booleanConstant true)
+}
+
+to 'play frequency' freq ms {
+  '_toneLoop' (freq * 1000) ms
+}
+
+to 'play tone' note octave ms {
+  local 'freq' ('_baseFreqForNote' note)
+  if (freq <= 10000) {
+    waitMillis ms
+    return 0
+  }
+  if (octave < 0) {
+    repeat (absoluteValue octave) {
+      freq = (freq / 2)
+    }
+  }
+  repeat octave {
+    freq = (freq * 2)
+  }
+  '_toneLoop' freq ms
+}
+
+to playMIDIKey key ms {
+  local 'freq' ('_baseFreqForSemitone' ((key % 12) + 1))
+  local 'octave' ((key / 12) - 5)
+  if (octave < 0) {
+    repeat (absoluteValue octave) {
+      freq = (freq / 2)
+    }
+  }
+  repeat octave {
+    freq = (freq * 2)
+  }
+  '_toneLoop' freq ms
+}
+
+to startTone freq {
+  if (_toneInitalized == 0) {'attach buzzer to pin' ''}
+  if ('[io:hasTone]') {'[io:playTone]' _tonePin freq}
+}
+
+to stopTone {
+  startTone 0
+}
+
